@@ -1,11 +1,11 @@
 import React, { memo, useCallback } from "react";
 import { Group, Rect, Text, Circle } from "react-konva";
-import { DeviceBinding } from '../../models/project'
+import { Component } from '../../models/storage'
 import { snapToHole } from '../../utils/grid'
 import { KonvaEventObject } from "konva/lib/Node";
 
 interface DeviceLayerProps {
-  devices: DeviceBinding[]
+  devices: Component[]
   selectedIds: string[]
   onDeviceSelect: (id: string) => void
   onDeviceMove: (id: string, pos: { x: number; y: number }) => void
@@ -18,13 +18,7 @@ const DEVICE_SIZE = 36;
 const CORNER = 8;
 const DOT_SIZE = 6;
 
-function statusStroke(status: "green" | "red" | "gray") {
-  switch (status) {
-    case "green": return "#22c55e";
-    case "red": return "#ef4444";
-    default: return "#94a3b8";
-  }
-}
+// Removed unused statusStroke function
 
 // Determine if device is an input device (like laser) or output device (like detector)
 function isInputDevice(deviceType: string): boolean {
@@ -73,9 +67,9 @@ export const DeviceLayer: React.FC<DeviceLayerProps> = memo(({
         return (
           <Group
             key={d.id}
-            x={d.pos.x}
-            y={d.pos.y}
-            rotation={d.pos.angle ?? 0}
+            x={d.pose.x}
+            y={d.pose.y}
+            rotation={d.pose.theta ?? 0}
             offsetX={DEVICE_SIZE / 2}       // center-based positioning
             offsetY={DEVICE_SIZE / 2}
             draggable
@@ -91,7 +85,7 @@ export const DeviceLayer: React.FC<DeviceLayerProps> = memo(({
               height={DEVICE_SIZE}
               cornerRadius={CORNER}
               fill="#0f172a"                 // slate-900
-              stroke={statusStroke(d.status)}
+              stroke="#94a3b8" // Default gray color
               strokeWidth={2}
               shadowBlur={2}
               shadowColor="black"
@@ -110,7 +104,7 @@ export const DeviceLayer: React.FC<DeviceLayerProps> = memo(({
             
             {/* Label below the box */}
             <Text
-              text={d.name}
+              text={d.label || d.type}
               fontSize={12}
               fill="#cbd5e1"                 // slate-300
               y={DEVICE_SIZE / 2 + 2}

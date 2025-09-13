@@ -8,28 +8,10 @@
 
 import { ButtonCard } from '../components/Common/ButtonCard'
 import { TableList } from '../components/Common/TableList'
-
-// Mock data for user tables
-const mockTables = [
-  {
-    id: '1',
-    name: 'Quantum Interferometer',
-    description: 'Setup for quantum interference experiments',
-    lastModified: '2 hours ago'
-  },
-  {
-    id: '2',
-    name: 'Raman Setup',
-    description: 'Raman spectroscopy configuration',
-    lastModified: '1 day ago'
-  },
-  {
-    id: '3',
-    name: 'Bell Test',
-    description: 'Bell inequality test apparatus',
-    lastModified: '3 days ago'
-  }
-]
+import { useStorageStore } from '../storage/useStorageStore'
+import { loadTableSnapshot } from '../storage/fileOperations'
+import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
 
 // Icons for the main action buttons
 const PlusIcon = () => (
@@ -51,19 +33,40 @@ const GlobeIcon = () => (
 )
 
 export const Dashboard = () => {
-  const handleCreateTable = () => {
-    console.log('Create new table')
-    // TODO: Implement create table functionality
+  const navigate = useNavigate()
+  const { 
+    availableTables, 
+    isLoading, 
+    error, 
+    createNewTable, 
+    loadTable
+  } = useStorageStore()
+  const [isCreating, setIsCreating] = useState(false)
+
+  const handleCreateTable = async () => {
+    try {
+      setIsCreating(true)
+      const tableId = await createNewTable('New Table')
+      navigate(`/editor?table=${tableId}`)
+    } catch (error) {
+      console.error('Failed to create table:', error)
+    } finally {
+      setIsCreating(false)
+    }
   }
 
-  const handleOpenTable = () => {
-    console.log('Open existing table')
-    // TODO: Implement open table functionality
+  const handleOpenTable = async () => {
+    try {
+      const snapshot = await loadTableSnapshot()
+      await loadTable(snapshot.table.id)
+      navigate(`/editor?table=${snapshot.table.id}`)
+    } catch (error) {
+      console.error('Failed to open table:', error)
+    }
   }
 
   const handleExploreTables = () => {
-    console.log('Explore others tables')
-    // TODO: Implement explore tables functionality
+    navigate('/explore')
   }
 
   const handleViewAllTables = () => {
@@ -71,10 +74,22 @@ export const Dashboard = () => {
     // TODO: Implement view all tables functionality
   }
 
-  const handleTableClick = (table: any) => {
-    console.log('Open table:', table.name)
-    // TODO: Implement table opening functionality
+  const handleTableClick = async (table: any) => {
+    try {
+      await loadTable(table.id)
+      navigate(`/editor?table=${table.id}`)
+    } catch (error) {
+      console.error('Failed to open table:', error)
+    }
   }
+
+  // Format tables for display
+  const formattedTables = availableTables.map(table => ({
+    id: table.id,
+    name: table.name,
+    description: `Last modified ${new Date(table.updatedAt).toLocaleDateString()}`,
+    lastModified: new Date(table.updatedAt).toLocaleTimeString()
+  }))
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -118,6 +133,7 @@ export const Dashboard = () => {
               label="Create Table"
               description="Start a new quantum optics setup"
               onClick={handleCreateTable}
+              disabled={isCreating}
             />
             <ButtonCard
               icon={<FolderOpenIcon />}
@@ -136,9 +152,11 @@ export const Dashboard = () => {
 
         {/* My Tables Section */}
         <TableList
-          tables={mockTables}
+          tables={formattedTables}
           onViewAll={handleViewAllTables}
           onTableClick={handleTableClick}
+          isLoading={isLoading}
+          error={error}
         />
       </main>
 

@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react'
 import { Stage, Layer } from 'react-konva'
-import { useProjectStore } from '../../state/useProjectStore'
+import { useStorageStore } from '../../storage/useStorageStore'
 import { useSelectionStore } from '../../state/useSelectionStore'
 import { useUiStore } from '../../state/useUiStore'
 import { GridLayer } from './GridLayer'
@@ -8,14 +8,14 @@ import { DeviceLayer } from './DeviceLayer'
 import { SelectionLayer } from './SelectionLayer'
 import { createShortcutHandler, SHORTCUTS } from '../../utils/shortcuts'
 import { snapToHole } from '../../utils/grid'
-import { DeviceType } from '../../models/project'
+import { ComponentType } from '../../models/storage'
 
 export function BenchCanvas() {
   const stageRef = useRef<any>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [stageSize, setStageSize] = useState({ width: 800, height: 600 })
   
-  const { project, addDevice, updateDevicePos } = useProjectStore()
+  const { currentSnapshot, addComponent, moveComponent } = useStorageStore()
   const { selectedIds, setSelection, clearSelection } = useSelectionStore()
   const { 
     viewport, 
@@ -149,21 +149,24 @@ export function BenchCanvas() {
         if (!pointer) return
         
         const snapped = snapToHole(pointer, { 
-          pitch: project.table.pitch, 
-          origin: project.table.origin 
+          pitch: currentSnapshot?.table.holePitch || 25, 
+          origin: currentSnapshot?.table.origin || { x: 0, y: 0 } 
         })
         
-        // Create new device with snapped position
-        const newDevice = {
-          id: `${data.deviceType}_${Date.now()}`,
-          type: data.deviceType as DeviceType,
-          name: data.deviceType.split('.').pop() || 'Device',
-          pos: { x: snapped.x, y: snapped.y, angle: 0 },
-          status: 'gray' as const,
-          driver: undefined
+        // Create new component with snapped position
+        if (currentSnapshot) {
+          const newComponent = {
+            id: crypto.randomUUID(),
+            tableId: currentSnapshot.table.id,
+            type: data.deviceType as ComponentType,
+            label: data.deviceType.split('.').pop() || 'Device',
+            pose: { x: snapped.x, y: snapped.y, theta: 0 },
+            locked: false,
+            meta: {}
+          }
+          
+          addComponent(newComponent)
         }
-        
-        addDevice(newDevice)
       }
     } catch (error) {
       console.error('Failed to parse drop data:', error)
@@ -206,7 +209,21 @@ export function BenchCanvas() {
           {/* Grid layer */}
           {gridVisible && (
             <GridLayer 
-              table={project.table}
+              table={currentSnapshot?.table || { 
+                id: 'default', 
+                name: 'Default', 
+                createdAt: Date.now(), 
+                updatedAt: Date.now(),
+                units: 'mm',
+                width: 800, 
+                height: 600, 
+                holePitch: 25, 
+                threadType: '1/4-20',
+                origin: { x: 0, y: 0 },
+                gridEnabled: true,
+                snapToHoles: true,
+                version: 1
+              }}
               viewport={viewport}
               stageSize={stageSize}
             />
@@ -216,16 +233,16 @@ export function BenchCanvas() {
         <Layer>
           {/* Device layer */}
           <DeviceLayer 
-            devices={project.devices}
+            devices={currentSnapshot?.components || []}
             selectedIds={selectedIds}
             onDeviceSelect={(id) => setSelection([id])}
-            onDeviceMove={(id, pos) => updateDevicePos(id, pos)}
+            onDeviceMove={(id, pos) => moveComponent(id, { x: pos.x, y: pos.y, theta: 0 })}
             onDeviceRotate={(id, angle) => {
               // TODO: Update device angle
               console.log('Rotate device:', id, angle)
             }}
-            tablePitch={project.table.pitch}
-            tableOrigin={project.table.origin}
+            tablePitch={currentSnapshot?.table.holePitch || 25}
+            tableOrigin={currentSnapshot?.table.origin || { x: 0, y: 0 }}
           />
         </Layer>
         

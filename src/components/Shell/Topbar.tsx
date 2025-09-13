@@ -1,64 +1,47 @@
-import { useState } from 'react'
 import { 
-  DocumentPlusIcon,
-  FolderOpenIcon,
   DocumentArrowDownIcon,
   ArrowUturnLeftIcon,
   ArrowUturnRightIcon,
   MagnifyingGlassPlusIcon,
   MagnifyingGlassMinusIcon,
   ArrowsPointingOutIcon,
-  CommandLineIcon,
-  Cog6ToothIcon,
-  InformationCircleIcon,
   PlayIcon,
   StopIcon,
   ExclamationTriangleIcon,
   Bars3Icon,
-  XMarkIcon
+  XMarkIcon,
+  HomeIcon
 } from '@heroicons/react/24/outline'
 import { useProjectStore } from '../../state/useProjectStore'
 import { useUiStore } from '../../state/useUiStore'
+import { useStorageStore } from '../../storage/useStorageStore'
 import { Button } from '../Common/Button'
-import { CommandPalette } from '../Common/CommandPalette'
+import { useNavigate } from 'react-router-dom'
 
 export function Topbar() {
-  const [showCommandPalette, setShowCommandPalette] = useState(false)
-  const { project, isDirty, newProject, markClean } = useProjectStore()
+  const navigate = useNavigate()
+  const { project, isDirty, markClean } = useProjectStore()
+  const { lastSaved } = useStorageStore()
   const { 
     zoomIn, 
     zoomOut, 
     zoomToFit, 
     toggleSnapToGrid, 
     snapToGrid,
-    openCommandPalette,
-    openSettings,
-    openAbout,
     sidebarLeftCollapsed,
     sidebarRightCollapsed,
     toggleSidebarLeft,
     toggleSidebarRight
   } = useUiStore()
 
-  const handleNewProject = () => {
-    if (isDirty) {
-      if (confirm('You have unsaved changes. Are you sure you want to create a new project?')) {
-        newProject()
-      }
-    } else {
-      newProject()
-    }
+  const handleHome = () => {
+    navigate('/')
   }
 
   const handleSave = async () => {
     // TODO: Implement save functionality
     console.log('Saving project:', project)
     markClean()
-  }
-
-  const handleOpen = async () => {
-    // TODO: Implement open functionality
-    console.log('Opening project')
   }
 
   // const handleExport = async () => {
@@ -94,24 +77,15 @@ export function Topbar() {
   return (
     <>
       <div className="h-12 bg-white border-b border-gray-200 flex items-center px-4 gap-2">
-        {/* File operations */}
+        {/* Home button */}
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="sm"
-            onClick={handleNewProject}
-            title="New Project (Ctrl+N)"
+            onClick={handleHome}
+            title="Home (Ctrl+H)"
           >
-            <DocumentPlusIcon className="w-4 h-4" />
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleOpen}
-            title="Open Project (Ctrl+O)"
-          >
-            <FolderOpenIcon className="w-4 h-4" />
+            <HomeIcon className="w-4 h-4" />
           </Button>
           
           <Button
@@ -219,6 +193,17 @@ export function Topbar() {
 
         <div className="flex-1" />
 
+        {/* Autosave status */}
+        <div className="flex items-center text-sm text-gray-500 mr-4">
+          {lastSaved ? (
+            <span>Autosaved at {lastSaved.toLocaleTimeString()}</span>
+          ) : (
+            <span>Not saved yet</span>
+          )}
+        </div>
+
+        <div className="w-px h-6 bg-gray-300" />
+
         {/* Workflow controls */}
         <div className="flex items-center gap-1">
           <Button
@@ -251,47 +236,8 @@ export function Topbar() {
             E-STOP
           </Button>
         </div>
-
-        <div className="w-px h-6 bg-gray-300" />
-
-        {/* Utility buttons */}
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={openCommandPalette}
-            title="Command Palette (Ctrl+K)"
-          >
-            <CommandLineIcon className="w-4 h-4" />
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={openSettings}
-            title="Settings"
-          >
-            <Cog6ToothIcon className="w-4 h-4" />
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={openAbout}
-            title="About"
-          >
-            <InformationCircleIcon className="w-4 h-4" />
-          </Button>
-        </div>
       </div>
 
-      {/* Command Palette */}
-      {showCommandPalette && (
-        <CommandPalette
-          isOpen={showCommandPalette}
-          onClose={() => setShowCommandPalette(false)}
-        />
-      )}
     </>
   )
 }

@@ -7,6 +7,7 @@ interface ButtonCardProps {
   description?: string
   onClick?: () => void
   className?: string
+  disabled?: boolean
 }
 
 export const ButtonCard = ({ 
@@ -14,17 +15,20 @@ export const ButtonCard = ({
   label, 
   description, 
   onClick, 
-  className 
+  className,
+  disabled = false
 }: ButtonCardProps) => {
   return (
     <button
       onClick={onClick}
+      disabled={disabled}
       className={clsx(
         'group relative w-full max-w-sm p-6 bg-gray-100 border border-black rounded-xl',
         'hover:bg-gray-200 hover:scale-105',
         'transition-all duration-200 ease-out',
         'focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-white',
         'text-left',
+        disabled && 'opacity-50 cursor-not-allowed hover:scale-100 hover:bg-gray-100',
         className
       )}
     >

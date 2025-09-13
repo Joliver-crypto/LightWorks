@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { Line, Circle, Rect } from 'react-konva'
-import { Table } from '../../models/project'
+import { Table } from '../../models/storage'
 import { generateGridLines, getGridCellSize } from '../../utils/grid'
 
 interface GridLayerProps {
@@ -11,7 +11,7 @@ interface GridLayerProps {
 
 export function GridLayer({ table, viewport, stageSize }: GridLayerProps) {
   const gridConfig = {
-    pitch: table.pitch,
+    pitch: table.holePitch,
     origin: table.origin,
     width: table.width,
     height: table.height,
