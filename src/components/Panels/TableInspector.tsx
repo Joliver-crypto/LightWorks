@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Table } from '../../models/project'
+import { Table } from '../../models/fileFormat'
 import { Input } from '../Common/Input'
 import { Button } from '../Common/Button'
 // import { Toggle } from '../Common/Toggle'
@@ -13,11 +13,11 @@ export function TableInspector({ table }: TableInspectorProps) {
   const [formData, setFormData] = useState({
     width: table.width,
     height: table.height,
-    pitch: table.pitch,
+    pitch: table.grid.pitch,
     units: table.units,
-    thread: table.thread,
-    originX: table.origin.x,
-    originY: table.origin.y,
+    thread: table.grid.thread,
+    originX: table.grid.origin.x,
+    originY: table.grid.origin.y,
   })
 
   const handleSave = () => {
@@ -30,11 +30,11 @@ export function TableInspector({ table }: TableInspectorProps) {
     setFormData({
       width: table.width,
       height: table.height,
-      pitch: table.pitch,
+      pitch: table.grid.pitch,
       units: table.units,
-      thread: table.thread,
-      originX: table.origin.x,
-      originY: table.origin.y,
+      thread: table.grid.thread,
+      originX: table.grid.origin.x,
+      originY: table.grid.origin.y,
     })
     setIsEditing(false)
   }

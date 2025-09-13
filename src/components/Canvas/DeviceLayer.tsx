@@ -1,6 +1,6 @@
 import React, { memo, useCallback } from "react";
 import { Group, Rect, Text, Circle } from "react-konva";
-import { Component } from '../../models/storage'
+import { Component } from '../../models/fileFormat'
 import { snapToHole } from '../../utils/grid'
 import { KonvaEventObject } from "konva/lib/Node";
 
@@ -8,10 +8,16 @@ interface DeviceLayerProps {
   devices: Component[]
   selectedIds: string[]
   onDeviceSelect: (id: string) => void
-  onDeviceMove: (id: string, pos: { x: number; y: number }) => void
+  onDeviceMove: (id: string, pos: { x: number; y: number; theta: number }) => void
   onDeviceRotate: (id: string, angle: number) => void
-  tablePitch: number
-  tableOrigin?: { x: number; y: number }
+  grid: {
+    pitch: number
+    thread: '1/4-20' | 'M6'
+    origin: { x: number; y: number }
+    snapToHoles: boolean
+    nx?: number
+    ny?: number
+  }
 }
 
 const DEVICE_SIZE = 36;
@@ -42,21 +48,21 @@ export const DeviceLayer: React.FC<DeviceLayerProps> = memo(({
   devices, 
   onDeviceSelect, 
   onDeviceMove, 
-  tablePitch,
-  tableOrigin
+  grid
 }) => {
   const handleDragMove = useCallback((e: KonvaEventObject<DragEvent>) => {
     const pointer = e.target.getStage()?.getPointerPosition();
     if (!pointer) return;
-    const snapped = snapToHole(pointer, { pitch: tablePitch, origin: tableOrigin });
+    const snapped = snapToHole(pointer, grid);
     // Live snap while dragging:
     e.target.position({ x: snapped.x, y: snapped.y });
-  }, [tablePitch, tableOrigin]);
+  }, [grid]);
 
   const handleDragEnd = useCallback((e: KonvaEventObject<DragEvent>, id: string) => {
     const { x, y } = e.target.position();
-    // Persist snapped center position:
-    onDeviceMove(id, { x, y });
+    const rotation = e.target.rotation();
+    // Persist snapped center position and rotation:
+    onDeviceMove(id, { x, y, theta: rotation });
   }, [onDeviceMove]);
 
   return (

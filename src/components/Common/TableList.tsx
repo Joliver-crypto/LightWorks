@@ -12,17 +12,13 @@ interface TableListProps {
   onViewAll?: () => void
   onTableClick?: (table: Table) => void
   className?: string
-  isLoading?: boolean
-  error?: string | null
 }
 
 export const TableList = ({ 
   tables, 
   onViewAll, 
   onTableClick,
-  className,
-  isLoading = false,
-  error = null
+  className 
 }: TableListProps) => {
   return (
     <div className={clsx('w-full max-w-4xl', className)}>
@@ -39,38 +35,27 @@ export const TableList = ({
       </div>
       
       <div className="space-y-2">
-        {error ? (
+        {tables.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-red-600">Error loading tables: {error}</p>
-            <button 
-              onClick={() => window.location.reload()}
-              className="text-sm text-blue-600 hover:text-blue-800 mt-2"
-            >
-              Retry
-            </button>
-          </div>
-        ) : isLoading ? (
-          <div className="text-center py-8">
-            <p className="text-gray-600">Loading tables...</p>
-          </div>
-        ) : tables.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-gray-600">Create a table to get started!</p>
+            <p className="text-gray-600">No tables created yet</p>
+            <p className="text-sm text-gray-500 mt-1">
+              Create your first table to get started
+            </p>
           </div>
         ) : (
           tables.map((table) => (
             <div
               key={table.id}
               onClick={() => onTableClick?.(table)}
-              className="group p-4 bg-gray-100 border border-black rounded-lg hover:bg-gray-200 cursor-pointer transition-all duration-200"
+              className="group p-4 bg-gray-100 border border-black rounded-lg hover:bg-gray-200 cursor-pointer transition-all duration-200"                                                                             
             >
               <div className="flex items-center justify-between">
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-gray-900 font-medium truncate group-hover:text-gray-900 transition-colors">
+                  <h3 className="text-gray-900 font-medium truncate group-hover:text-gray-900 transition-colors">                                                                                                       
                     {table.name}
                   </h3>
                   {table.description && (
-                    <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors mt-1 truncate">
+                    <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors mt-1 truncate">                                                                                                     
                       {table.description}
                     </p>
                   )}

@@ -14,14 +14,14 @@ import {
 } from '@heroicons/react/24/outline'
 import { useProjectStore } from '../../state/useProjectStore'
 import { useUiStore } from '../../state/useUiStore'
-import { useStorageStore } from '../../storage/useStorageStore'
+import { useFileStore } from '../../storage/useFileStore'
 import { Button } from '../Common/Button'
 import { useNavigate } from 'react-router-dom'
 
 export function Topbar() {
   const navigate = useNavigate()
   const { project, isDirty, markClean } = useProjectStore()
-  const { lastSaved } = useStorageStore()
+  const { isDirty: fileIsDirty } = useFileStore()
   const { 
     zoomIn, 
     zoomOut, 
@@ -195,8 +195,8 @@ export function Topbar() {
 
         {/* Autosave status */}
         <div className="flex items-center text-sm text-gray-500 mr-4">
-          {lastSaved ? (
-            <span>Autosaved at {lastSaved.toLocaleTimeString()}</span>
+          {fileIsDirty ? (
+            <span>Unsaved changes</span>
           ) : (
             <span>Not saved yet</span>
           )}

@@ -15,11 +15,11 @@ export async function saveProject(project: Project, filename?: string): Promise<
   if (supportsFileSystemAccess()) {
     try {
       const fileHandle = await (window as any).showSaveFilePicker({
-        suggestedName: filename || 'project.optbench.json',
+        suggestedName: filename || 'project.lightworks',
         types: [{
-          description: 'LightWork Project Files',
+          description: 'LightWorks Files',
           accept: {
-            'application/json': ['.optbench.json']
+            'application/json': ['.lightworks']
           }
         }]
       })
@@ -37,7 +37,7 @@ export async function saveProject(project: Project, filename?: string): Promise<
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = filename || 'project.optbench.json'
+    a.download = filename || 'project.lightworks'
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -51,14 +51,20 @@ export async function loadProject(): Promise<Project> {
     try {
       const [fileHandle] = await (window as any).showOpenFilePicker({
         types: [{
-          description: 'LightWork Project Files',
+          description: 'LightWorks Files',
           accept: {
-            'application/json': ['.optbench.json']
+            'application/json': ['.lightworks']
           }
         }]
       })
       
       const file = await fileHandle.getFile()
+      
+      // Validate file extension
+      if (!file.name.toLowerCase().endsWith('.lightworks')) {
+        throw new Error('Only .lightworks files are allowed')
+      }
+      
       const text = await file.text()
       const data = JSON.parse(text)
       
@@ -76,7 +82,7 @@ export async function loadProject(): Promise<Project> {
     return new Promise((resolve, reject) => {
       const input = document.createElement('input')
       input.type = 'file'
-      input.accept = '.optbench.json'
+      input.accept = '.lightworks'
       
       input.onchange = async (event) => {
         const file = (event.target as HTMLInputElement).files?.[0]
@@ -86,6 +92,12 @@ export async function loadProject(): Promise<Project> {
         }
         
         try {
+          // Validate file extension
+          if (!file.name.toLowerCase().endsWith('.lightworks')) {
+            reject(new Error('Only .lightworks files are allowed'))
+            return
+          }
+          
           const text = await file.text()
           const data = JSON.parse(text)
           const project = ProjectSchema.parse(data)
@@ -134,7 +146,7 @@ export function isValidProjectFile(filename: string): boolean {
 export function generateProjectFilename(prefix: string = 'project'): string {
   const now = new Date()
   const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, -5)
-  return `${prefix}_${timestamp}.optbench.json`
+  return `${prefix}_${timestamp}.lightworks`
 }
 
 // File size formatter

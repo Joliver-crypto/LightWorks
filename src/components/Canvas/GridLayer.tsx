@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Line, Circle, Rect } from 'react-konva'
-import { Table } from '../../models/storage'
-import { generateGridLines, getGridCellSize } from '../../utils/grid'
+import { Table } from '../../models/fileFormat'
+import { generateGridLines, getGridCellSize, gridToGridConfig } from '../../utils/grid'
 
 interface GridLayerProps {
   table: Table
@@ -10,13 +10,7 @@ interface GridLayerProps {
 }
 
 export function GridLayer({ table, viewport, stageSize }: GridLayerProps) {
-  const gridConfig = {
-    pitch: table.holePitch,
-    origin: table.origin,
-    width: table.width,
-    height: table.height,
-    units: table.units
-  }
+  const gridConfig = gridToGridConfig(table.grid, table.width, table.height, table.units)
 
   const gridLines = useMemo(() => {
     const viewportRect = {
@@ -56,8 +50,8 @@ export function GridLayer({ table, viewport, stageSize }: GridLayerProps) {
     <>
       {/* Table border */}
       <Rect
-        x={table.origin.x}
-        y={table.origin.y}
+        x={table.grid.origin.x}
+        y={table.grid.origin.y}
         width={table.width}
         height={table.height}
         stroke="#6b7280"

@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react'
 import { Stage, Layer } from 'react-konva'
-import { useStorageStore } from '../../storage/useStorageStore'
+import { useFileStore } from '../../storage/useFileStore'
 import { useSelectionStore } from '../../state/useSelectionStore'
 import { useUiStore } from '../../state/useUiStore'
 import { GridLayer } from './GridLayer'
@@ -8,14 +8,14 @@ import { DeviceLayer } from './DeviceLayer'
 import { SelectionLayer } from './SelectionLayer'
 import { createShortcutHandler, SHORTCUTS } from '../../utils/shortcuts'
 import { snapToHole } from '../../utils/grid'
-import { ComponentType } from '../../models/storage'
+import { ComponentType } from '../../models/fileFormat'
 
 export function BenchCanvas() {
   const stageRef = useRef<any>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [stageSize, setStageSize] = useState({ width: 800, height: 600 })
   
-  const { currentSnapshot, addComponent, moveComponent } = useStorageStore()
+  const { currentTable, addComponent, moveComponent } = useFileStore()
   const { selectedIds, setSelection, clearSelection } = useSelectionStore()
   const { 
     viewport, 
@@ -148,19 +148,20 @@ export function BenchCanvas() {
         const pointer = stage.getPointerPosition()
         if (!pointer) return
         
-        const snapped = snapToHole(pointer, { 
-          pitch: currentSnapshot?.table.holePitch || 25, 
-          origin: currentSnapshot?.table.origin || { x: 0, y: 0 } 
+        const snapped = snapToHole(pointer, currentTable?.table.grid || { 
+          pitch: 25, 
+          thread: '1/4-20',
+          origin: { x: 0, y: 0 },
+          snapToHoles: true
         })
         
         // Create new component with snapped position
-        if (currentSnapshot) {
+        if (currentTable) {
           const newComponent = {
-            id: crypto.randomUUID(),
-            tableId: currentSnapshot.table.id,
             type: data.deviceType as ComponentType,
             label: data.deviceType.split('.').pop() || 'Device',
             pose: { x: snapped.x, y: snapped.y, theta: 0 },
+            holePose: { i: Math.round(snapped.x / 25), j: Math.round(snapped.y / 25), theta: 0 },
             locked: false,
             meta: {}
           }
@@ -207,23 +208,9 @@ export function BenchCanvas() {
       >
         <Layer>
           {/* Grid layer */}
-          {gridVisible && (
+          {gridVisible && currentTable && (
             <GridLayer 
-              table={currentSnapshot?.table || { 
-                id: 'default', 
-                name: 'Default', 
-                createdAt: Date.now(), 
-                updatedAt: Date.now(),
-                units: 'mm',
-                width: 800, 
-                height: 600, 
-                holePitch: 25, 
-                threadType: '1/4-20',
-                origin: { x: 0, y: 0 },
-                gridEnabled: true,
-                snapToHoles: true,
-                version: 1
-              }}
+              table={currentTable.table}
               viewport={viewport}
               stageSize={stageSize}
             />
@@ -232,18 +219,19 @@ export function BenchCanvas() {
         
         <Layer>
           {/* Device layer */}
-          <DeviceLayer 
-            devices={currentSnapshot?.components || []}
-            selectedIds={selectedIds}
-            onDeviceSelect={(id) => setSelection([id])}
-            onDeviceMove={(id, pos) => moveComponent(id, { x: pos.x, y: pos.y, theta: 0 })}
-            onDeviceRotate={(id, angle) => {
-              // TODO: Update device angle
-              console.log('Rotate device:', id, angle)
-            }}
-            tablePitch={currentSnapshot?.table.holePitch || 25}
-            tableOrigin={currentSnapshot?.table.origin || { x: 0, y: 0 }}
-          />
+          {currentTable && (
+            <DeviceLayer 
+              devices={currentTable.components}
+              selectedIds={selectedIds}
+              onDeviceSelect={(id) => setSelection([id])}
+              onDeviceMove={(id, pos) => moveComponent(id, pos)}
+              onDeviceRotate={(id, angle) => {
+                // TODO: Update device angle
+                console.log('Rotate device:', id, angle)
+              }}
+              grid={currentTable.table.grid}
+            />
+          )}
         </Layer>
         
         <Layer>

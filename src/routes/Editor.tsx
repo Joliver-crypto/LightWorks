@@ -1,16 +1,16 @@
 import { useSearchParams } from 'react-router-dom'
 import { useEffect } from 'react'
-import { useStorageStore } from '../storage/useStorageStore'
+import { useFileStore } from '../storage/useFileStore'
 import { BenchCanvas } from '../components/Canvas/BenchCanvas'
 
 export function Editor() {
   const [searchParams] = useSearchParams()
   const tableId = searchParams.get('table')
-  const { loadTable, currentSnapshot, isLoading, error } = useStorageStore()
+  const { loadTable, currentTable, isLoading, error } = useFileStore()
 
   useEffect(() => {
     if (tableId) {
-      loadTable(tableId).catch(error => {
+      loadTable(tableId, 'experiments').catch((error: any) => {
         console.error('Failed to load table:', error)
       })
     }
@@ -40,7 +40,7 @@ export function Editor() {
     )
   }
 
-  if (!currentSnapshot) {
+  if (!currentTable) {
     return (
       <div className="h-full w-full flex items-center justify-center">
         <div className="text-center">

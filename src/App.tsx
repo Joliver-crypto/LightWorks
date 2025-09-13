@@ -8,34 +8,26 @@ import { Extensions } from './routes/Extensions'
 import { Workflows } from './routes/Workflows'
 import { Settings } from './routes/Settings'
 import { About } from './routes/About'
-import { enableAutoSave } from './storage/autoSave'
-import { useStorageStore } from './storage/useStorageStore'
-import { ensureDatabaseReady } from './storage/database'
-import './storage/test' // Run storage tests
+import { useFileStore } from './storage/useFileStore'
 
 function App() {
-  const { refreshTableList, refreshStats } = useStorageStore()
+  const { listTables } = useFileStore()
 
   useEffect(() => {
-    // Initialize storage system
-    const cleanup = enableAutoSave()
-    
-    // Load initial data with error handling
+    // Load initial data
     const initializeStorage = async () => {
       try {
-        await ensureDatabaseReady()
-        await refreshTableList()
-        await refreshStats()
+        console.log('Loading file-based tables...')
+        await listTables('experiments')
+        await listTables('community')
+        console.log('File storage initialization complete')
       } catch (error) {
-        console.warn('Storage initialization warning:', error)
-        // Don't set error state for initialization issues
+        console.error('File storage initialization failed:', error)
       }
     }
     
     initializeStorage()
-    
-    return cleanup
-  }, [refreshTableList, refreshStats])
+  }, [listTables])
 
   return (
     <div className="h-screen flex flex-col bg-white">

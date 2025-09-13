@@ -1,5 +1,5 @@
 import { Point, Rect } from './geometry'
-import { Table } from '../models/project'
+import { Grid } from '../models/fileFormat'
 
 // Grid utility functions for hole grid rendering and snapping
 
@@ -11,17 +11,11 @@ export interface GridConfig {
   units: 'mm' | 'inch'
 }
 
-// New type for simplified table geometry
-export type TableGeom = {
-  pitch: number;           // hole spacing in table units (e.g., mm)
-  origin?: { x: number; y: number }; // top-left origin for the hole lattice
-};
-
 // Snap point to nearest grid hole (center-based)
-export function snapToHole(p: Point, table: TableGeom): Point {
-  const pitch = table.pitch ?? 25; // default 25 mm if not set
-  const ox = table.origin?.x ?? 0;
-  const oy = table.origin?.y ?? 0;
+export function snapToHole(p: Point, grid: Grid): Point {
+  const pitch = grid.pitch;
+  const ox = grid.origin.x;
+  const oy = grid.origin.y;
 
   const gx = Math.round((p.x - ox) / pitch) * pitch + ox;
   const gy = Math.round((p.y - oy) / pitch) * pitch + oy;
@@ -29,14 +23,14 @@ export function snapToHole(p: Point, table: TableGeom): Point {
   return { x: gx, y: gy };
 }
 
-// Convert table configuration to grid config
-export function tableToGridConfig(table: Table): GridConfig {
+// Convert grid configuration to grid config
+export function gridToGridConfig(grid: Grid, width: number, height: number, units: 'mm' | 'inch'): GridConfig {
   return {
-    pitch: table.pitch,
-    origin: table.origin,
-    width: table.width,
-    height: table.height,
-    units: table.units
+    pitch: grid.pitch,
+    origin: grid.origin,
+    width,
+    height,
+    units
   }
 }
 
