@@ -1,4 +1,3 @@
-import { ReactNode } from 'react'
 import { clsx } from 'clsx'
 
 interface Table {
@@ -13,13 +12,17 @@ interface TableListProps {
   onViewAll?: () => void
   onTableClick?: (table: Table) => void
   className?: string
+  isLoading?: boolean
+  error?: string | null
 }
 
 export const TableList = ({ 
   tables, 
   onViewAll, 
   onTableClick,
-  className 
+  className,
+  isLoading = false,
+  error = null
 }: TableListProps) => {
   return (
     <div className={clsx('w-full max-w-4xl', className)}>
@@ -36,12 +39,23 @@ export const TableList = ({
       </div>
       
       <div className="space-y-2">
-        {tables.length === 0 ? (
+        {error ? (
           <div className="text-center py-8">
-            <p className="text-gray-600">No tables created yet</p>
-            <p className="text-sm text-gray-500 mt-1">
-              Create your first table to get started
-            </p>
+            <p className="text-red-600">Error loading tables: {error}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="text-sm text-blue-600 hover:text-blue-800 mt-2"
+            >
+              Retry
+            </button>
+          </div>
+        ) : isLoading ? (
+          <div className="text-center py-8">
+            <p className="text-gray-600">Loading tables...</p>
+          </div>
+        ) : tables.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-gray-600">Create a table to get started!</p>
           </div>
         ) : (
           tables.map((table) => (
