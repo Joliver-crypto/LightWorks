@@ -72,13 +72,39 @@ src/
 │   ├── Canvas/         # 2D canvas components
 │   ├── Panels/         # Sidebar panels
 │   └── Common/         # Reusable UI components
+│       ├── ButtonCard.tsx    # Dashboard action button component
+│       └── TableList.tsx     # User tables list component
 ├── routes/             # Page components
+│   └── Dashboard.tsx   # Main dashboard/home screen
 ├── state/              # Zustand stores
 ├── api/                # API client and mock data
 ├── models/             # TypeScript types and Zod schemas
 ├── utils/              # Utility functions
 └── tests/              # Unit tests
 ```
+
+## Dashboard Files
+
+The main dashboard screen consists of the following files:
+
+### `/src/routes/Dashboard.tsx`
+**Main Dashboard Screen** - The home page of LightWorks featuring:
+- LightWorks branding with animated green laser beam
+- Three main action buttons: Create Table, Open From File, Explore Others' Tables
+- "My Tables" section displaying user's existing projects
+- Clean, Cursor-inspired UI with white background and light grey elements
+
+### `/src/components/Common/ButtonCard.tsx`
+**Reusable Button Component** - Used for the three main dashboard actions:
+- Hover effects with scale and shadow
+- Icon and text support
+- Consistent styling across all action buttons
+
+### `/src/components/Common/TableList.tsx`
+**Table List Component** - Displays user's existing tables:
+- Shows table names, descriptions, and last modified dates
+- Hover effects and click handlers
+- "View all" functionality
 
 ## Configuration
 
