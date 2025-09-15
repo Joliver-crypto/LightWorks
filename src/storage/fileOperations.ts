@@ -175,32 +175,40 @@ export function createFileSystem(): FileSystem {
 // File operations
 export class FileOperations {
   private fs: FileSystem
-  private experimentsPath: string
-  private communityPath: string
 
   constructor(fs?: FileSystem) {
     this.fs = fs || createFileSystem()
-    
-    // Initialize with default paths - will be updated when needed
-    this.experimentsPath = '/Experiments'
-    this.communityPath = '/Community'
   }
 
   // Get the correct path based on current environment
-  private getExperimentsPath(): string {
+  private async getExperimentsPath(): Promise<string> {
     const isElectron = (window as any).electronAPI?.isElectron
     console.log('FileOperations: isElectron =', isElectron)
     if (isElectron) {
-      return '~/Documents/LightWorks/Experiments'
+      // Use the Electron API to get the correct experiments directory
+      try {
+        const result = await (window as any).api.getExperimentsDir()
+        return result
+      } catch (error) {
+        console.error('Failed to get experiments directory:', error)
+        return '~/Documents/LightWorks/Experiments'
+      }
     }
     return '/Experiments'
   }
 
-  private getCommunityPath(): string {
+  private async getCommunityPath(): Promise<string> {
     const isElectron = (window as any).electronAPI?.isElectron
     console.log('FileOperations: isElectron =', isElectron)
     if (isElectron) {
-      return '~/Documents/LightWorks/Community'
+      // For now, use the same directory as experiments
+      try {
+        const result = await (window as any).api.getExperimentsDir()
+        return result.replace('Experiments', 'Community')
+      } catch (error) {
+        console.error('Failed to get community directory:', error)
+        return '~/Documents/LightWorks/Community'
+      }
     }
     return '/Community'
   }
@@ -219,12 +227,6 @@ export class FileOperations {
     return path
   }
 
-  // Generate file path for a table
-  private async getTablePath(tableId: string, folder: 'experiments' | 'community' = 'experiments'): Promise<string> {
-    const basePath = folder === 'experiments' ? this.getExperimentsPath() : this.getCommunityPath()
-    const expandedPath = await this.expandPath(basePath)
-    return `${expandedPath}/${tableId}.lightworks`
-  }
 
   // Generate checksum for file content
   private generateChecksum(content: string): string {
@@ -234,7 +236,7 @@ export class FileOperations {
   // Load a table file
   async loadTable(tableId: string, folder: 'experiments' | 'community' = 'experiments'): Promise<LightWorksFile> {
     // First try to find the file by ID in the table metadata
-    const basePath = await this.expandPath(folder === 'experiments' ? this.getExperimentsPath() : this.getCommunityPath())
+    const basePath = await this.expandPath(folder === 'experiments' ? await this.getExperimentsPath() : await this.getCommunityPath())
     
     try {
       const files = await this.fs.readdir(basePath)
@@ -244,11 +246,52 @@ export class FileOperations {
           try {
             const fullPath = `${basePath}/${file}`
             const content = await this.fs.readFile(fullPath)
-            const data = JSON.parse(content)
+            const data = JSON.parse(content) as any
             
-            // Validate the file format
-            if (data.format === 'lightworks' && data.table.id === tableId) {
+            // Handle both old and new file formats
+            if (data.format === 'lightworks' && data.table && data.table.id === tableId) {
+              // New format
               return data as LightWorksFile
+            } else if (data.schemaVersion && data.name && (data.table?.id === tableId || !data.table)) {
+              // Old format - convert to new format
+              const convertedTable: LightWorksFile = {
+                format: 'lightworks',
+                version: 1,
+                meta: {
+                  app: 'LightWorks',
+                  createdAt: new Date(data.createdAt).getTime(),
+                  modifiedAt: data.config?.lastSaved ? new Date(data.config.lastSaved).getTime() : new Date(data.createdAt).getTime(),
+                  author: 'user'
+                },
+                table: {
+                  id: data.table?.id || tableId,
+                  name: data.name,
+                  units: 'mm',
+                  angleUnits: 'deg',
+                  width: 900,
+                  height: 600,
+                  grid: {
+                    pitch: data.config?.holePitchMm || 25,
+                    thread: '1/4-20',
+                    origin: { x: 0, y: 0 },
+                    nx: data.config?.cols || 10,
+                    ny: data.config?.rows || 10,
+                    snapToHoles: true
+                  },
+                  view: {
+                    zoom: 1.0,
+                    pan: { x: 0, y: 0 },
+                    showGrid: true,
+                    showBeamPaths: true
+                  }
+                },
+                components: data.config?.devices || [],
+                connections: [],
+                assets: {
+                  notes: ''
+                }
+              }
+              return convertedTable
             }
           } catch (error) {
             console.warn(`Failed to read table file ${file}:`, error)
@@ -272,7 +315,7 @@ export class FileOperations {
       .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
       .trim()
     
-    const basePath = await this.expandPath(folder === 'experiments' ? this.getExperimentsPath() : this.getCommunityPath())
+    const basePath = await this.expandPath(folder === 'experiments' ? await this.getExperimentsPath() : await this.getCommunityPath())
     const path = `${basePath}/${sanitizedName}.lightworks`
     
     // Update metadata
@@ -298,7 +341,7 @@ export class FileOperations {
 
   // List all tables in a folder
   async listTables(folder: 'experiments' | 'community' = 'experiments'): Promise<Array<{ id: string; name: string; modifiedAt: number }>> {
-    const basePath = await this.expandPath(folder === 'experiments' ? this.getExperimentsPath() : this.getCommunityPath())
+    const basePath = await this.expandPath(folder === 'experiments' ? await this.getExperimentsPath() : await this.getCommunityPath())
     
     try {
       const files = await this.fs.readdir(basePath)
@@ -310,14 +353,25 @@ export class FileOperations {
             // Load the table to get its metadata
             const fullPath = `${basePath}/${file}`
             const content = await this.fs.readFile(fullPath)
-            const table = JSON.parse(content) as LightWorksFile
+            const table = JSON.parse(content) as any
             
-            // Validate the file format
-            if (table.format === 'lightworks') {
+            // Handle both old and new file formats
+            if (table.format === 'lightworks' && table.table) {
+              // New format
               tables.push({
                 id: table.table.id,
                 name: table.table.name,
                 modifiedAt: table.meta.modifiedAt
+              })
+            } else if (table.schemaVersion && table.name) {
+              // Old format - convert to new format structure
+              const tableId = table.table?.id || crypto.randomUUID()
+              const modifiedAt = table.config?.lastSaved ? new Date(table.config.lastSaved).getTime() : new Date(table.createdAt).getTime()
+              
+              tables.push({
+                id: tableId,
+                name: table.name,
+                modifiedAt: modifiedAt
               })
             }
           } catch (error) {
@@ -434,7 +488,7 @@ export function getFileOperations(): FileOperations {
 
 // For backward compatibility
 export const fileOperations = new Proxy({} as FileOperations, {
-  get(target, prop) {
+  get(_target, prop) {
     return getFileOperations()[prop as keyof FileOperations]
   }
 })

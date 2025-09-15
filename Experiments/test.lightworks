@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2025-09-15T22:56:27.393Z",
+  "name": "test",
+  "config": {
+    "rows": 10,
+    "cols": 10,
+    "holePitchMm": 25,
+    "devices": [],
+    "lastSaved": "2025-09-15T22:56:34.255Z"
+  }
+}

@@ -35,65 +35,134 @@ const GlobeIcon = () => (
 export const Dashboard = () => {
   const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(true)
-  const [showFolderModal, setShowFolderModal] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [newExperimentName, setNewExperimentName] = useState('')
-  const [experimentsPath, setExperimentsPath] = useState('')
+  const [tableRows, setTableRows] = useState(10)
+  const [tableCols, setTableCols] = useState(10)
+  const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({})
   
   const { 
     experiments, 
-    community, 
     isLoading: storeLoading, 
-    loadTable
+    loadTable,
+    listTables
   } = useFileStore()
 
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true)
       try {
-        // Data will be loaded by the App component
-        await new Promise(resolve => setTimeout(resolve, 100)) // Small delay for UX
+        // Only load user's experiments, not community files
+        await listTables('experiments')
+        // Small delay for UX
+        await new Promise(resolve => setTimeout(resolve, 100))
       } finally {
         setIsLoading(false)
       }
     }
     loadData()
-  }, [])
+  }, [listTables])
 
   const handleCreateTable = () => {
     setShowCreateModal(true)
   }
 
+  const validateInputs = () => {
+    const errors: {[key: string]: string} = {}
+    
+    if (!newExperimentName.trim()) {
+      errors.name = 'Please enter an experiment name'
+    } else {
+      // Check for duplicate file names in experiments
+      const sanitizedName = newExperimentName.trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '') // Remove special characters except spaces and hyphens
+        .replace(/\s+/g, '-') // Replace spaces with hyphens
+        .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+        .trim()
+      
+      const fileName = `${sanitizedName}.lightworks`
+      const existingFile = experiments.find(exp => {
+        const existingFileName = exp.name
+          .toLowerCase()
+          .replace(/[^a-z0-9\s-]/g, '')
+          .replace(/\s+/g, '-')
+          .replace(/-+/g, '-')
+          .trim()
+        return `${existingFileName}.lightworks` === fileName
+      })
+      
+      if (existingFile) {
+        errors.name = 'A table with this name already exists. Please choose a different name.'
+      }
+    }
+    
+    if (tableRows < 1 || !Number.isInteger(tableRows)) {
+      errors.rows = 'Please enter a valid number of rows (minimum 1)'
+    }
+    
+    if (tableCols < 1 || !Number.isInteger(tableCols)) {
+      errors.cols = 'Please enter a valid number of columns (minimum 1)'
+    }
+    
+    setValidationErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
   const handleCreateExperiment = async () => {
-    if (!newExperimentName.trim()) return
+    if (!validateInputs()) return
     
     try {
       const name = newExperimentName.trim()
-      const defaultConfig = {
-        grid: { rows: 10, cols: 10, holePitchMm: 25 },
-        devices: [],
-        meta: {},
+      const config = {
+        rows: tableRows,
+        cols: tableCols,
+        holePitchMm: 25,
+        devices: []
       }
 
       if (!window.api) {
         throw new Error('window.api is not available. Make sure the preload script is loaded correctly.');
       }
 
-      await window.api.createExperiment(name, defaultConfig)
+      const { filePath } = await window.api.createExperiment(name, config)
       
       setShowCreateModal(false)
       setNewExperimentName('')
+      setTableRows(10)
+      setTableCols(10)
+      setValidationErrors({})
       
       // Navigate to editor with the new table
-      navigate('/editor')
+      navigate(`/editor?file=${encodeURIComponent(filePath)}`)
     } catch (error) {
       console.error('Failed to create table:', error)
     }
   }
 
-  const handleOpenTable = () => {
-    console.log('Open existing table')
-    // TODO: Implement open table functionality
+  const handleOpenTable = async () => {
+    try {
+      // Get the home directory from Electron API
+      const homeDir = await window.electronAPI.getHomeDir()
+      const downloadsPath = homeDir + '/Downloads'
+      
+      const result = await window.electronAPI.showOpenDialog({
+        defaultPath: downloadsPath,
+        filters: [
+          { name: 'LightWorks Files', extensions: ['lightworks'] },
+          { name: 'All Files', extensions: ['*'] }
+        ],
+        properties: ['openFile']
+      })
+      
+      if (!result.canceled && result.filePaths && result.filePaths.length > 0) {
+        const filePath = result.filePaths[0]
+        // Navigate to editor with the file path
+        navigate(`/editor?file=${encodeURIComponent(filePath)}`)
+      }
+    } catch (error) {
+      console.error('Failed to open file dialog:', error)
+    }
   }
 
   const handleExploreTables = () => {
@@ -101,17 +170,6 @@ export const Dashboard = () => {
   }
 
   const handleViewAllTables = async () => {
-    setShowFolderModal(true)
-    try {
-      const path = await window.api.getExperimentsDir()
-      setExperimentsPath(path)
-    } catch (error) {
-      console.error('Failed to get experiments directory:', error)
-      setExperimentsPath('Error loading path')
-    }
-  }
-
-  const handleOpenExperimentsFolder = async () => {
     try {
       await window.api.openExperimentsFolder()
     } catch (error) {
@@ -119,40 +177,23 @@ export const Dashboard = () => {
     }
   }
 
-  const handleCopyPath = async () => {
-    try {
-      const experimentsPath = await window.api.getExperimentsDir()
-      await navigator.clipboard.writeText(experimentsPath)
-      // You could add a toast notification here
-    } catch (error) {
-      alert('Failed to copy to clipboard. Please copy manually.')
-    }
-  }
 
   const handleTableClick = async (table: any) => {
     try {
       await loadTable(table.id, 'experiments')
-      navigate('/editor')
+      navigate(`/editor?tableId=${encodeURIComponent(table.id)}`)
     } catch (error) {
       console.error('Failed to load table:', error)
     }
   }
 
-  // Combine experiments and community tables for display
-  const allTables = [
-    ...experiments.map(table => ({ 
-      id: table.id, 
-      name: table.name, 
-      lastModified: new Date(table.modifiedAt).toLocaleDateString(),
-      description: 'Optical experiment setup'
-    })),
-    ...community.map(table => ({ 
-      id: table.id, 
-      name: table.name, 
-      lastModified: new Date(table.modifiedAt).toLocaleDateString(),
-      description: 'Community shared design'
-    }))
-  ].sort((a, b) => b.lastModified.localeCompare(a.lastModified))
+  // Only show user's experiments, not community files
+  const allTables = experiments.map(table => ({ 
+    id: table.id, 
+    name: table.name, // Display name without .lightworks extension
+    lastModified: new Date(table.modifiedAt).toLocaleDateString(),
+    description: 'Optical experiment setup'
+  })).sort((a, b) => b.lastModified.localeCompare(a.lastModified))
 
   if (isLoading || storeLoading) {
     return (
@@ -211,7 +252,7 @@ export const Dashboard = () => {
             <ButtonCard
               icon={<FolderOpenIcon />}
               label="Open From File"
-              description="Import table from local file"
+              description="Open LightWorks file from Downloads or anywhere"
               onClick={handleOpenTable}
             />
             <ButtonCard
@@ -244,81 +285,91 @@ export const Dashboard = () => {
       <Modal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
-        title="Create New Experiment"
+        title="Create New Table"
       >
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Experiment Name
+              Table Name
             </label>
             <input
               type="text"
               value={newExperimentName}
               onChange={(e) => setNewExperimentName(e.target.value)}
-              placeholder="Enter experiment name..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Enter table name..."
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                validationErrors.name ? 'border-red-500' : 'border-gray-300'
+              }`}
               autoFocus
             />
+            {validationErrors.name && (
+              <p className="text-red-500 text-sm mt-1">{validationErrors.name}</p>
+            )}
           </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Number of Rows (Holes)
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={tableRows}
+                onChange={(e) => setTableRows(parseInt(e.target.value) || 1)}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  validationErrors.rows ? 'border-red-500' : 'border-gray-300'
+                }`}
+              />
+              {validationErrors.rows && (
+                <p className="text-red-500 text-sm mt-1">{validationErrors.rows}</p>
+              )}
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Number of Columns (Holes)
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={tableCols}
+                onChange={(e) => setTableCols(parseInt(e.target.value) || 1)}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  validationErrors.cols ? 'border-red-500' : 'border-gray-300'
+                }`}
+              />
+              {validationErrors.cols && (
+                <p className="text-red-500 text-sm mt-1">{validationErrors.cols}</p>
+              )}
+            </div>
+          </div>
+          
+          <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
+            <p><strong>Table Preview:</strong> {tableRows} rows × {tableCols} columns</p>
+            <p className="text-xs mt-1">Hole pitch: 25mm (standard optical table spacing)</p>
+          </div>
+          
           <div className="flex justify-end space-x-2">
             <button
-              onClick={() => setShowCreateModal(false)}
+              onClick={() => {
+                setShowCreateModal(false)
+                setValidationErrors({})
+              }}
               className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 text-sm"
             >
               Cancel
             </button>
             <button
               onClick={handleCreateExperiment}
-              disabled={!newExperimentName.trim()}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
             >
-              Create
+              Create Table
             </button>
           </div>
         </div>
       </Modal>
 
-      {/* Folder Modal */}
-      <Modal
-        isOpen={showFolderModal}
-        onClose={() => setShowFolderModal(false)}
-        title="Open Experiments Folder"
-      >
-        <div className="mb-4">
-          <p className="text-sm text-gray-600 mb-2">Your experiments are stored in:</p>
-          <div className="bg-gray-100 p-3 rounded border font-mono text-sm break-all">
-            {experimentsPath || 'Loading...'}
-          </div>
-        </div>
-        <div className="mb-4">
-          <p className="text-sm text-gray-600 mb-2">You can:</p>
-          <ul className="text-sm text-gray-600 space-y-1">
-            <li>• Click "Open Folder" to open the experiments directory in your file manager</li>
-            <li>• Click "Copy Path" to copy the path to your clipboard</li>
-            <li>• Manually navigate to the path shown above</li>
-          </ul>
-        </div>
-        <div className="flex justify-end space-x-2">
-          <button
-            onClick={handleOpenExperimentsFolder}
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
-          >
-            Open Folder
-          </button>
-          <button
-            onClick={handleCopyPath}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-          >
-            Copy Path
-          </button>
-          <button
-            onClick={() => setShowFolderModal(false)}
-            className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 text-sm"
-          >
-            Close
-          </button>
-        </div>
-      </Modal>
     </div>
   )
 }

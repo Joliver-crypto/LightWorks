@@ -5,9 +5,10 @@
  * Features search, filtering by difficulty, sorting, and a responsive grid of lab cards.
  */
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { clsx } from 'clsx'
+import { useFileStore } from '../storage/useFileStore'
 
 // Lab data structure
 interface Lab {
@@ -18,6 +19,7 @@ interface Lab {
   popularity: number
   thumbnail: string
   tags: string[]
+  filePath?: string
 }
 
 // Sample lab data
@@ -197,10 +199,76 @@ export const Explore = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [difficultyFilter, setDifficultyFilter] = useState<DifficultyFilter>('All')
   const [sortBy, setSortBy] = useState<SortFilter>('Popularity')
+  const [communityLabs, setCommunityLabs] = useState<Lab[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  
+  const { listTables } = useFileStore()
+
+  // Load community labs on component mount
+  useEffect(() => {
+    const loadCommunityLabs = async () => {
+      try {
+        setIsLoading(true)
+        await listTables('community')
+        
+        // Get the community files and convert them to Lab format
+        const communityDir = '/Users/justinoliver/LightWorks/Community'
+        const result = await window.electronAPI.readdir(communityDir)
+        const communityFiles = result.success ? result.files : []
+        const labs: Lab[] = []
+        
+        for (const file of communityFiles) {
+          if (file.endsWith('.lightworks')) {
+            try {
+              const filePath = `${communityDir}/${file}`
+              const fileResult = await window.electronAPI.readFile(filePath)
+              if (fileResult.success && fileResult.content) {
+                const data = JSON.parse(fileResult.content)
+                const lab: Lab = {
+                  id: data.name || file.replace('.lightworks', ''),
+                  name: data.name || file.replace('.lightworks', ''),
+                  description: data.description || 'Community shared experiment',
+                  difficulty: data.difficulty || 'Intermediate',
+                  popularity: Math.floor(Math.random() * 200) + 50, // Random popularity for demo
+                  thumbnail: getThumbnailFromTags(data.tags || []),
+                  tags: data.tags || [],
+                  filePath: filePath
+                }
+                labs.push(lab)
+              }
+            } catch (error) {
+              console.error(`Failed to load ${file}:`, error)
+            }
+          }
+        }
+        
+        setCommunityLabs(labs)
+      } catch (error) {
+        console.error('Failed to load community labs:', error)
+        // Fallback to sample labs if loading fails
+        setCommunityLabs(sampleLabs)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    loadCommunityLabs()
+  }, [listTables])
+
+  // Helper function to get thumbnail based on tags
+  const getThumbnailFromTags = (tags: string[]): string => {
+    if (tags.includes('photon') || tags.includes('detection')) return 'photon'
+    if (tags.includes('quantum-computing') || tags.includes('cnot-gate')) return 'quantum'
+    if (tags.includes('spectroscopy') || tags.includes('raman')) return 'spectroscopy'
+    if (tags.includes('entanglement') || tags.includes('spdc')) return 'entanglement'
+    if (tags.includes('cryptography') || tags.includes('qkd')) return 'cryptography'
+    return 'photon' // default
+  }
 
   // Filter and sort labs
   const filteredAndSortedLabs = useMemo(() => {
-    let filtered = sampleLabs.filter(lab => {
+    const labsToFilter = communityLabs.length > 0 ? communityLabs : sampleLabs
+    let filtered = labsToFilter.filter(lab => {
       const matchesSearch = lab.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            lab.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            lab.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -226,17 +294,32 @@ export const Explore = () => {
     })
 
     return filtered
-  }, [searchQuery, difficultyFilter, sortBy])
+  }, [searchQuery, difficultyFilter, sortBy, communityLabs])
 
   const handleLabClick = (lab: Lab) => {
     console.log('Loading lab:', lab.name)
-    // TODO: Implement lab loading functionality
-    // For now, navigate to editor with lab data
-    navigate(`/editor?lab=${lab.id}`)
+    if (lab.filePath) {
+      // Navigate to editor with the file path
+      navigate(`/editor?file=${encodeURIComponent(lab.filePath)}`)
+    } else {
+      // Fallback for sample labs
+      navigate(`/editor?lab=${lab.id}`)
+    }
   }
 
   const handleBackToDashboard = () => {
     navigate('/')
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading community experiments...</p>
+        </div>
+      </div>
+    )
   }
 
   return (

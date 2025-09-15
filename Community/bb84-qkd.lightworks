@@ -1,0 +1,171 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2025-01-27T10:00:00.000Z",
+  "name": "Quantum Cryptography Lab (BB84 QKD)",
+  "description": "Implement quantum key distribution with single photons.",
+  "difficulty": "Intermediate",
+  "tags": ["cryptography", "qkd", "bb84", "security"],
+  "author": "Community",
+  "config": {
+    "rows": 20,
+    "cols": 24,
+    "holePitchMm": 25,
+    "devices": [
+      {
+        "id": "alice-laser",
+        "type": "laser",
+        "position": { "row": 2, "col": 2 },
+        "rotation": 0,
+        "properties": {
+          "wavelength": 850,
+          "power": 0.1,
+          "beamDiameter": 1.0
+        }
+      },
+      {
+        "id": "alice-attenuator",
+        "type": "attenuator",
+        "position": { "row": 2, "col": 4 },
+        "rotation": 0,
+        "properties": {
+          "attenuation": 20.0
+        }
+      },
+      {
+        "id": "alice-polarizer",
+        "type": "polarizer",
+        "position": { "row": 2, "col": 6 },
+        "rotation": 0,
+        "properties": {
+          "angle": 0
+        }
+      },
+      {
+        "id": "alice-modulator",
+        "type": "polarizationModulator",
+        "position": { "row": 2, "col": 8 },
+        "rotation": 0,
+        "properties": {
+          "modulationType": "random",
+          "bases": ["H/V", "D/A"]
+        }
+      },
+      {
+        "id": "quantum-channel",
+        "type": "opticalFiber",
+        "position": { "row": 2, "col": 10 },
+        "rotation": 0,
+        "properties": {
+          "length": 1000,
+          "loss": 0.2,
+          "dispersion": 17
+        }
+      },
+      {
+        "id": "bob-modulator",
+        "type": "polarizationModulator",
+        "position": { "row": 2, "col": 12 },
+        "rotation": 0,
+        "properties": {
+          "modulationType": "random",
+          "bases": ["H/V", "D/A"]
+        }
+      },
+      {
+        "id": "bob-polarizer",
+        "type": "polarizer",
+        "position": { "row": 2, "col": 14 },
+        "rotation": 0,
+        "properties": {
+          "angle": 0
+        }
+      },
+      {
+        "id": "bob-detector-h",
+        "type": "photonDetector",
+        "position": { "row": 1, "col": 16 },
+        "rotation": 0,
+        "properties": {
+          "quantumEfficiency": 0.8,
+          "darkCountRate": 5,
+          "deadTime": 1.0
+        }
+      },
+      {
+        "id": "bob-detector-v",
+        "type": "photonDetector",
+        "position": { "row": 3, "col": 16 },
+        "rotation": 0,
+        "properties": {
+          "quantumEfficiency": 0.8,
+          "darkCountRate": 5,
+          "deadTime": 1.0
+        }
+      },
+      {
+        "id": "bob-detector-d",
+        "type": "photonDetector",
+        "position": { "row": 1, "col": 18 },
+        "rotation": 0,
+        "properties": {
+          "quantumEfficiency": 0.8,
+          "darkCountRate": 5,
+          "deadTime": 1.0
+        }
+      },
+      {
+        "id": "bob-detector-a",
+        "type": "photonDetector",
+        "position": { "row": 3, "col": 18 },
+        "rotation": 0,
+        "properties": {
+          "quantumEfficiency": 0.8,
+          "darkCountRate": 5,
+          "deadTime": 1.0
+        }
+      },
+      {
+        "id": "timing-sync",
+        "type": "timingSynchronizer",
+        "position": { "row": 2, "col": 20 },
+        "rotation": 0,
+        "properties": {
+          "clockRate": 1000000000,
+          "jitter": 0.1
+        }
+      },
+      {
+        "id": "key-sifter",
+        "type": "keySifter",
+        "position": { "row": 2, "col": 22 },
+        "rotation": 0,
+        "properties": {
+          "protocol": "BB84",
+          "errorThreshold": 0.11
+        }
+      },
+      {
+        "id": "eve-tap",
+        "type": "beamSplitter",
+        "position": { "row": 4, "col": 10 },
+        "rotation": 45,
+        "properties": {
+          "reflectance": 0.1,
+          "transmittance": 0.9
+        }
+      },
+      {
+        "id": "eve-detector",
+        "type": "photonDetector",
+        "position": { "row": 5, "col": 12 },
+        "rotation": 0,
+        "properties": {
+          "quantumEfficiency": 0.6,
+          "darkCountRate": 10,
+          "deadTime": 2.0
+        }
+      }
+    ],
+    "lastSaved": "2025-01-27T10:00:00.000Z"
+  }
+}

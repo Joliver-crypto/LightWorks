@@ -22,11 +22,16 @@ function getDocumentsDir() {
 
 function getExperimentsDir() {
   const custom = process.env.LIGHTWORKS_EXPERIMENTS_DIR?.trim();
-  const base = custom && custom.length > 0
-    ? custom
-    : path.join(getDocumentsDir(), 'LightWorks', 'Experiments');
-  fsSync.mkdirSync(base, { recursive: true });
-  return base;
+  if (custom && custom.length > 0) {
+    fsSync.mkdirSync(custom, { recursive: true });
+    return custom;
+  }
+  
+  // Use the project's local Experiments folder
+  const projectRoot = path.join(__dirname, '..');
+  const experimentsDir = path.join(projectRoot, 'Experiments');
+  fsSync.mkdirSync(experimentsDir, { recursive: true });
+  return experimentsDir;
 }
 
 function sanitizeFileName(name) {
@@ -188,11 +193,15 @@ ipcMain.handle('get-home-dir', async () => {
 // Experiments API
 ipcMain.handle('experiments:create', async (_evt, args) => {
   const filePath = nextUniqueExperimentPath(args?.name || 'Untitled');
+  const now = new Date().toISOString();
   const payload = {
     schemaVersion: 1,
-    createdAt: new Date().toISOString(),
+    createdAt: now,
     name: args?.name || 'Untitled',
-    config: args?.config ?? {},
+    config: {
+      ...args?.config ?? {},
+      lastSaved: now
+    },
   };
   fsSync.writeFileSync(filePath, JSON.stringify(payload, null, 2), 'utf-8');
   return { filePath };

@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2025-01-27T10:00:00.000Z",
+  "name": "Photon Counting Experiment",
+  "description": "Measure single photons with detectors and explore quantum statistics.",
+  "difficulty": "Beginner",
+  "tags": ["photon", "detection", "statistics"],
+  "author": "Community",
+  "config": {
+    "rows": 12,
+    "cols": 16,
+    "holePitchMm": 25,
+    "devices": [
+      {
+        "id": "laser-1",
+        "type": "laser",
+        "position": { "row": 2, "col": 2 },
+        "rotation": 0,
+        "properties": {
+          "wavelength": 532,
+          "power": 1.0,
+          "beamDiameter": 2.0
+        }
+      },
+      {
+        "id": "neutral-density-1",
+        "type": "neutralDensityFilter",
+        "position": { "row": 2, "col": 4 },
+        "rotation": 0,
+        "properties": {
+          "opticalDensity": 3.0
+        }
+      },
+      {
+        "id": "beam-splitter-1",
+        "type": "beamSplitter",
+        "position": { "row": 2, "col": 6 },
+        "rotation": 45,
+        "properties": {
+          "reflectance": 0.5,
+          "transmittance": 0.5
+        }
+      },
+      {
+        "id": "detector-1",
+        "type": "photonDetector",
+        "position": { "row": 1, "col": 8 },
+        "rotation": 0,
+        "properties": {
+          "quantumEfficiency": 0.8,
+          "darkCountRate": 100,
+          "deadTime": 1.0
+        }
+      },
+      {
+        "id": "detector-2",
+        "type": "photonDetector",
+        "position": { "row": 3, "col": 8 },
+        "rotation": 0,
+        "properties": {
+          "quantumEfficiency": 0.8,
+          "darkCountRate": 100,
+          "deadTime": 1.0
+        }
+      },
+      {
+        "id": "coincidence-1",
+        "type": "coincidenceCounter",
+        "position": { "row": 2, "col": 10 },
+        "rotation": 0,
+        "properties": {
+          "timeWindow": 10.0,
+          "resolution": 0.1
+        }
+      }
+    ],
+    "lastSaved": "2025-01-27T10:00:00.000Z"
+  }
+}

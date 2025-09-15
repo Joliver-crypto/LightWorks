@@ -1,0 +1,160 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2025-01-27T10:00:00.000Z",
+  "name": "Optical Quantum Computing Gate",
+  "description": "Simulate a CNOT gate using photons, beam splitters, and detectors.",
+  "difficulty": "Advanced",
+  "tags": ["quantum-computing", "cnot-gate", "simulation"],
+  "author": "Community",
+  "config": {
+    "rows": 14,
+    "cols": 18,
+    "holePitchMm": 25,
+    "devices": [
+      {
+        "id": "laser-control",
+        "type": "laser",
+        "position": { "row": 2, "col": 2 },
+        "rotation": 0,
+        "properties": {
+          "wavelength": 780,
+          "power": 0.5,
+          "beamDiameter": 1.5
+        }
+      },
+      {
+        "id": "laser-target",
+        "type": "laser",
+        "position": { "row": 6, "col": 2 },
+        "rotation": 0,
+        "properties": {
+          "wavelength": 780,
+          "power": 0.5,
+          "beamDiameter": 1.5
+        }
+      },
+      {
+        "id": "polarizer-1",
+        "type": "polarizer",
+        "position": { "row": 2, "col": 4 },
+        "rotation": 0,
+        "properties": {
+          "angle": 0
+        }
+      },
+      {
+        "id": "polarizer-2",
+        "type": "polarizer",
+        "position": { "row": 6, "col": 4 },
+        "rotation": 0,
+        "properties": {
+          "angle": 0
+        }
+      },
+      {
+        "id": "bs-control-1",
+        "type": "beamSplitter",
+        "position": { "row": 2, "col": 6 },
+        "rotation": 45,
+        "properties": {
+          "reflectance": 0.5,
+          "transmittance": 0.5
+        }
+      },
+      {
+        "id": "bs-target-1",
+        "type": "beamSplitter",
+        "position": { "row": 6, "col": 6 },
+        "rotation": 45,
+        "properties": {
+          "reflectance": 0.5,
+          "transmittance": 0.5
+        }
+      },
+      {
+        "id": "phase-shifter",
+        "type": "phaseShifter",
+        "position": { "row": 4, "col": 8 },
+        "rotation": 0,
+        "properties": {
+          "phaseShift": 0
+        }
+      },
+      {
+        "id": "bs-control-2",
+        "type": "beamSplitter",
+        "position": { "row": 2, "col": 10 },
+        "rotation": 45,
+        "properties": {
+          "reflectance": 0.5,
+          "transmittance": 0.5
+        }
+      },
+      {
+        "id": "bs-target-2",
+        "type": "beamSplitter",
+        "position": { "row": 6, "col": 10 },
+        "rotation": 45,
+        "properties": {
+          "reflectance": 0.5,
+          "transmittance": 0.5
+        }
+      },
+      {
+        "id": "detector-c1",
+        "type": "photonDetector",
+        "position": { "row": 1, "col": 12 },
+        "rotation": 0,
+        "properties": {
+          "quantumEfficiency": 0.9,
+          "darkCountRate": 50,
+          "deadTime": 0.5
+        }
+      },
+      {
+        "id": "detector-c2",
+        "type": "photonDetector",
+        "position": { "row": 3, "col": 12 },
+        "rotation": 0,
+        "properties": {
+          "quantumEfficiency": 0.9,
+          "darkCountRate": 50,
+          "deadTime": 0.5
+        }
+      },
+      {
+        "id": "detector-t1",
+        "type": "photonDetector",
+        "position": { "row": 5, "col": 12 },
+        "rotation": 0,
+        "properties": {
+          "quantumEfficiency": 0.9,
+          "darkCountRate": 50,
+          "deadTime": 0.5
+        }
+      },
+      {
+        "id": "detector-t2",
+        "type": "photonDetector",
+        "position": { "row": 7, "col": 12 },
+        "rotation": 0,
+        "properties": {
+          "quantumEfficiency": 0.9,
+          "darkCountRate": 50,
+          "deadTime": 0.5
+        }
+      },
+      {
+        "id": "coincidence-cnot",
+        "type": "coincidenceCounter",
+        "position": { "row": 4, "col": 14 },
+        "rotation": 0,
+        "properties": {
+          "timeWindow": 5.0,
+          "resolution": 0.1
+        }
+      }
+    ],
+    "lastSaved": "2025-01-27T10:00:00.000Z"
+  }
+}
