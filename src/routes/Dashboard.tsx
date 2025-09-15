@@ -38,13 +38,13 @@ export const Dashboard = () => {
   const [showFolderModal, setShowFolderModal] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [newExperimentName, setNewExperimentName] = useState('')
+  const [experimentsPath, setExperimentsPath] = useState('')
   
   const { 
     experiments, 
     community, 
     isLoading: storeLoading, 
-    loadTable, 
-    createTable 
+    loadTable
   } = useFileStore()
 
   useEffect(() => {
@@ -68,10 +68,24 @@ export const Dashboard = () => {
     if (!newExperimentName.trim()) return
     
     try {
-      await createTable(newExperimentName.trim(), 'experiments')
+      const name = newExperimentName.trim()
+      const defaultConfig = {
+        grid: { rows: 10, cols: 10, holePitchMm: 25 },
+        devices: [],
+        meta: {},
+      }
+
+      if (!window.api) {
+        throw new Error('window.api is not available. Make sure the preload script is loaded correctly.');
+      }
+
+      await window.api.createExperiment(name, defaultConfig)
+      
       setShowCreateModal(false)
       setNewExperimentName('')
-      // Navigate to editor will be handled by the table selection
+      
+      // Navigate to editor with the new table
+      navigate('/editor')
     } catch (error) {
       console.error('Failed to create table:', error)
     }
@@ -86,17 +100,32 @@ export const Dashboard = () => {
     navigate('/explore')
   }
 
-  const handleViewAllTables = () => {
+  const handleViewAllTables = async () => {
     setShowFolderModal(true)
+    try {
+      const path = await window.api.getExperimentsDir()
+      setExperimentsPath(path)
+    } catch (error) {
+      console.error('Failed to get experiments directory:', error)
+      setExperimentsPath('Error loading path')
+    }
+  }
+
+  const handleOpenExperimentsFolder = async () => {
+    try {
+      await window.api.openExperimentsFolder()
+    } catch (error) {
+      console.error('Failed to open experiments folder:', error)
+    }
   }
 
   const handleCopyPath = async () => {
-    const experimentsPath = '/Users/justinoliver/LightWorks/Experiments'
     try {
+      const experimentsPath = await window.api.getExperimentsDir()
       await navigator.clipboard.writeText(experimentsPath)
       // You could add a toast notification here
     } catch (error) {
-      alert('Failed to copy to clipboard. Please copy manually:\n' + experimentsPath)
+      alert('Failed to copy to clipboard. Please copy manually.')
     }
   }
 
@@ -258,18 +287,24 @@ export const Dashboard = () => {
         <div className="mb-4">
           <p className="text-sm text-gray-600 mb-2">Your experiments are stored in:</p>
           <div className="bg-gray-100 p-3 rounded border font-mono text-sm break-all">
-            /Users/justinoliver/LightWorks/Experiments
+            {experimentsPath || 'Loading...'}
           </div>
         </div>
         <div className="mb-4">
-          <p className="text-sm text-gray-600 mb-2">To open this folder:</p>
+          <p className="text-sm text-gray-600 mb-2">You can:</p>
           <ul className="text-sm text-gray-600 space-y-1">
-            <li>• <strong>macOS:</strong> Press Cmd+Space, type "Finder", then press Cmd+Shift+G and paste the path</li>
-            <li>• <strong>Windows:</strong> Press Win+R, type the path, and press Enter</li>
-            <li>• <strong>Linux:</strong> Open file manager and navigate to the path</li>
+            <li>• Click "Open Folder" to open the experiments directory in your file manager</li>
+            <li>• Click "Copy Path" to copy the path to your clipboard</li>
+            <li>• Manually navigate to the path shown above</li>
           </ul>
         </div>
         <div className="flex justify-end space-x-2">
+          <button
+            onClick={handleOpenExperimentsFolder}
+            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+          >
+            Open Folder
+          </button>
           <button
             onClick={handleCopyPath}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"

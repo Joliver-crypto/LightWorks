@@ -29,6 +29,79 @@ export interface FileSystem {
   stat(path: string): Promise<{ isDirectory(): boolean; mtime: Date }>
 }
 
+// Electron API interface
+interface ElectronAPI {
+  readFile: (filePath: string) => Promise<{ success: boolean; content?: string; error?: string }>
+  writeFile: (filePath: string, content: string) => Promise<{ success: boolean; error?: string }>
+  readdir: (dirPath: string) => Promise<{ success: boolean; files?: string[]; error?: string }>
+  mkdir: (dirPath: string) => Promise<{ success: boolean; error?: string }>
+  stat: (filePath: string) => Promise<{ success: boolean; isDirectory?: boolean; mtime?: Date; error?: string }>
+  exists: (filePath: string) => Promise<{ success: boolean; exists?: boolean; error?: string }>
+  showSaveDialog: (options?: any) => Promise<{ canceled: boolean; filePath?: string }>
+  showOpenDialog: (options?: any) => Promise<{ canceled: boolean; filePaths?: string[] }>
+  showDirectoryDialog: () => Promise<{ canceled: boolean; filePaths?: string[] }>
+  platform: string
+  isElectron: boolean
+}
+
+// Electron-based file system implementation
+class ElectronFileSystem implements FileSystem {
+  private electronAPI: ElectronAPI
+
+  constructor() {
+    this.electronAPI = (window as any).electronAPI
+  }
+
+  async readFile(path: string): Promise<string> {
+    const result = await this.electronAPI.readFile(path)
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to read file')
+    }
+    return result.content!
+  }
+
+  async writeFile(path: string, content: string): Promise<void> {
+    const result = await this.electronAPI.writeFile(path, content)
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to write file')
+    }
+  }
+
+  async readdir(path: string): Promise<string[]> {
+    const result = await this.electronAPI.readdir(path)
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to read directory')
+    }
+    return result.files!
+  }
+
+  async mkdir(path: string): Promise<void> {
+    const result = await this.electronAPI.mkdir(path)
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to create directory')
+    }
+  }
+
+  async exists(path: string): Promise<boolean> {
+    const result = await this.electronAPI.exists(path)
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to check file existence')
+    }
+    return result.exists!
+  }
+
+  async stat(path: string): Promise<{ isDirectory(): boolean; mtime: Date }> {
+    const result = await this.electronAPI.stat(path)
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to get file stats')
+    }
+    return {
+      isDirectory: () => result.isDirectory!,
+      mtime: result.mtime!
+    }
+  }
+}
+
 // Browser-based file system implementation
 class BrowserFileSystem implements FileSystem {
   async readFile(path: string): Promise<string> {
@@ -81,10 +154,20 @@ class BrowserFileSystem implements FileSystem {
 
 // File system factory
 export function createFileSystem(): FileSystem {
+  console.log('createFileSystem: window =', typeof window)
+  console.log('createFileSystem: electronAPI =', (window as any).electronAPI)
+  console.log('createFileSystem: electronAPI.isElectron =', (window as any).electronAPI?.isElectron)
+  
   if (typeof window === 'undefined') {
     // Node.js environment - would need fs module
     throw new Error('Node.js file system not implemented yet')
+  } else if ((window as any).electronAPI?.isElectron === true) {
+    // Electron environment
+    console.log('createFileSystem: Using ElectronFileSystem')
+    return new ElectronFileSystem()
   } else {
+    // Browser environment
+    console.log('createFileSystem: Using BrowserFileSystem')
     return new BrowserFileSystem()
   }
 }
@@ -97,14 +180,50 @@ export class FileOperations {
 
   constructor(fs?: FileSystem) {
     this.fs = fs || createFileSystem()
+    
+    // Initialize with default paths - will be updated when needed
     this.experimentsPath = '/Experiments'
     this.communityPath = '/Community'
   }
 
+  // Get the correct path based on current environment
+  private getExperimentsPath(): string {
+    const isElectron = (window as any).electronAPI?.isElectron
+    console.log('FileOperations: isElectron =', isElectron)
+    if (isElectron) {
+      return '~/Documents/LightWorks/Experiments'
+    }
+    return '/Experiments'
+  }
+
+  private getCommunityPath(): string {
+    const isElectron = (window as any).electronAPI?.isElectron
+    console.log('FileOperations: isElectron =', isElectron)
+    if (isElectron) {
+      return '~/Documents/LightWorks/Community'
+    }
+    return '/Community'
+  }
+
+  // Expand home directory path
+  private async expandPath(path: string): Promise<string> {
+    if (path.startsWith('~/')) {
+      if ((window as any).electronAPI?.isElectron) {
+        const homeDir = await (window as any).electronAPI.getHomeDir()
+        return path.replace('~', homeDir)
+      } else {
+        // Fallback for browser (though this shouldn't happen with ~ paths)
+        return path
+      }
+    }
+    return path
+  }
+
   // Generate file path for a table
-  private getTablePath(tableId: string, folder: 'experiments' | 'community' = 'experiments'): string {
-    const basePath = folder === 'experiments' ? this.experimentsPath : this.communityPath
-    return `${basePath}/${tableId}.lightworks`
+  private async getTablePath(tableId: string, folder: 'experiments' | 'community' = 'experiments'): Promise<string> {
+    const basePath = folder === 'experiments' ? this.getExperimentsPath() : this.getCommunityPath()
+    const expandedPath = await this.expandPath(basePath)
+    return `${expandedPath}/${tableId}.lightworks`
   }
 
   // Generate checksum for file content
@@ -115,7 +234,7 @@ export class FileOperations {
   // Load a table file
   async loadTable(tableId: string, folder: 'experiments' | 'community' = 'experiments'): Promise<LightWorksFile> {
     // First try to find the file by ID in the table metadata
-    const basePath = folder === 'experiments' ? this.experimentsPath : this.communityPath
+    const basePath = await this.expandPath(folder === 'experiments' ? this.getExperimentsPath() : this.getCommunityPath())
     
     try {
       const files = await this.fs.readdir(basePath)
@@ -153,7 +272,7 @@ export class FileOperations {
       .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
       .trim()
     
-    const basePath = folder === 'experiments' ? this.experimentsPath : this.communityPath
+    const basePath = await this.expandPath(folder === 'experiments' ? this.getExperimentsPath() : this.getCommunityPath())
     const path = `${basePath}/${sanitizedName}.lightworks`
     
     // Update metadata
@@ -179,7 +298,7 @@ export class FileOperations {
 
   // List all tables in a folder
   async listTables(folder: 'experiments' | 'community' = 'experiments'): Promise<Array<{ id: string; name: string; modifiedAt: number }>> {
-    const basePath = folder === 'experiments' ? this.experimentsPath : this.communityPath
+    const basePath = await this.expandPath(folder === 'experiments' ? this.getExperimentsPath() : this.getCommunityPath())
     
     try {
       const files = await this.fs.readdir(basePath)
@@ -303,5 +422,19 @@ export class FileOperations {
   }
 }
 
-// Singleton instance
-export const fileOperations = new FileOperations()
+// Lazy singleton instance
+let _fileOperations: FileOperations | null = null
+
+export function getFileOperations(): FileOperations {
+  if (!_fileOperations) {
+    _fileOperations = new FileOperations()
+  }
+  return _fileOperations
+}
+
+// For backward compatibility
+export const fileOperations = new Proxy({} as FileOperations, {
+  get(target, prop) {
+    return getFileOperations()[prop as keyof FileOperations]
+  }
+})
