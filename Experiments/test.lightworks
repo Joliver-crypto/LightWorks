@@ -4,9 +4,9 @@
   "meta": {
     "app": "LightWorks",
     "createdAt": 1757976987393,
-    "modifiedAt": 1758045440952,
+    "modifiedAt": 1758047346346,
     "author": "user",
-    "checksum": "5a1812eb"
+    "checksum": "63860cf3"
   },
   "table": {
     "id": "f6bc1729-e7a3-42db-881b-1c86d1db44e4",
@@ -36,7 +36,25 @@
       "showBeamPaths": true
     }
   },
-  "components": [],
+  "components": [
+    {
+      "type": "laser.generic",
+      "label": "generic",
+      "pose": {
+        "x": 75,
+        "y": 75,
+        "theta": 0
+      },
+      "holePose": {
+        "i": 3,
+        "j": 3,
+        "theta": 0
+      },
+      "locked": false,
+      "meta": {},
+      "id": "fc3d77ec-689d-40cd-a9bf-860b42d47049"
+    }
+  ],
   "connections": [],
   "assets": {
     "notes": ""

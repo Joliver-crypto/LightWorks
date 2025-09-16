@@ -1,6 +1,7 @@
 import { useSearchParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useFileStore } from '../storage/useFileStore'
+import { BenchCanvas } from '../components/Canvas/BenchCanvas'
 
 // Legacy file format interface for backward compatibility
 interface LegacyLightWorksFile {
@@ -93,41 +94,9 @@ export function Editor() {
     )
   }
 
-  // Extract grid dimensions
-  const rows = fileData?.config?.rows || currentTable?.table?.grid?.ny || 10
-  const cols = fileData?.config?.cols || currentTable?.table?.grid?.nx || 10
-  const holePitch = fileData?.config?.holePitchMm || currentTable?.table?.grid?.pitch || 25
-
   return (
-    <div className="h-full w-full flex flex-col">
-      {/* Table visualization */}
-      <div className="flex-1 p-6">
-        <div className="bg-gray-50 rounded-lg p-4 h-full">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Optical Table Grid</h3>
-          <div className="grid gap-1" style={{
-            gridTemplateColumns: `repeat(${cols}, 1fr)`,
-            aspectRatio: `${cols}/${rows}`
-          }}>
-            {Array.from({ length: rows * cols }, (_, index) => {
-              const row = Math.floor(index / cols)
-              const col = index % cols
-              return (
-                <div
-                  key={index}
-                  className="bg-white border border-gray-300 rounded-sm aspect-square flex items-center justify-center text-xs text-gray-500 hover:bg-blue-50 hover:border-blue-300 transition-colors"
-                  title={`Hole ${row + 1},${col + 1}`}
-                >
-                  {row + 1},{col + 1}
-                </div>
-              )
-            })}
-          </div>
-          <div className="mt-4 text-sm text-gray-600">
-            <p>Grid: {rows} × {cols} holes • Pitch: {holePitch}mm</p>
-            <p className="text-xs mt-1">Click on holes to place optical components</p>
-          </div>
-        </div>
-      </div>
+    <div className="h-full w-full">
+      <BenchCanvas />
     </div>
   )
 }

@@ -95,7 +95,7 @@ export function getGridHoleAt(point: Point, config: GridConfig): Point | null {
 
 // Calculate grid cell size for rendering
 export function getGridCellSize(config: GridConfig, viewportScale: number): number {
-  return Math.max(1, config.pitch * viewportScale * 0.1) // 10% of pitch as hole size
+  return Math.max(1, config.pitch * viewportScale * 0.2) // 20% of pitch as hole size (larger holes)
 }
 
 // Generate grid lines for rendering
