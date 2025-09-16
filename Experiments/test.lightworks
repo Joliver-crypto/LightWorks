@@ -1,12 +1,44 @@
 {
-  "schemaVersion": 1,
-  "createdAt": "2025-09-15T22:56:27.393Z",
-  "name": "test",
-  "config": {
-    "rows": 10,
-    "cols": 10,
-    "holePitchMm": 25,
-    "devices": [],
-    "lastSaved": "2025-09-15T22:56:34.255Z"
+  "format": "lightworks",
+  "version": 1,
+  "meta": {
+    "app": "LightWorks",
+    "createdAt": 1757976987393,
+    "modifiedAt": 1758045440952,
+    "author": "user",
+    "checksum": "5a1812eb"
+  },
+  "table": {
+    "id": "f6bc1729-e7a3-42db-881b-1c86d1db44e4",
+    "name": "test",
+    "units": "mm",
+    "angleUnits": "deg",
+    "width": 900,
+    "height": 600,
+    "grid": {
+      "pitch": 25,
+      "thread": "1/4-20",
+      "origin": {
+        "x": 0,
+        "y": 0
+      },
+      "nx": 10,
+      "ny": 10,
+      "snapToHoles": true
+    },
+    "view": {
+      "zoom": 1,
+      "pan": {
+        "x": 0,
+        "y": 0
+      },
+      "showGrid": true,
+      "showBeamPaths": true
+    }
+  },
+  "components": [],
+  "connections": [],
+  "assets": {
+    "notes": ""
   }
 }

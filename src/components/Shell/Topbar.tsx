@@ -12,16 +12,31 @@ import {
   XMarkIcon,
   HomeIcon
 } from '@heroicons/react/24/outline'
+import { useEffect, useState } from 'react'
 import { useProjectStore } from '../../state/useProjectStore'
 import { useUiStore } from '../../state/useUiStore'
 import { useFileStore } from '../../storage/useFileStore'
 import { Button } from '../Common/Button'
 import { useNavigate } from 'react-router-dom'
 
+function formatTimestamp(timestamp: number | null): string | null {
+  if (!timestamp) return null
+  const now = Date.now()
+  const diffMs = now - timestamp
+  const diffMinutes = Math.floor(diffMs / (1000 * 60))
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+
+  if (diffMinutes < 1) return 'Just now'
+  if (diffMinutes < 60) return `Saved ${diffMinutes} minute${diffMinutes === 1 ? '' : 's'} ago`
+  if (diffHours < 24) return `Saved ${new Date(timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
+  if (diffDays === 1) return 'Saved Yesterday'
+  return `Saved ${new Date(timestamp).toLocaleDateString()}`
+}
+
 export function Topbar() {
   const navigate = useNavigate()
-  const { project, isDirty, markClean } = useProjectStore()
-  const { isDirty: fileIsDirty } = useFileStore()
+  const { markClean } = useProjectStore()
   const { 
     zoomIn, 
     zoomOut, 
@@ -34,51 +49,78 @@ export function Topbar() {
     toggleSidebarRight
   } = useUiStore()
 
+  const { currentTable, isDirty: fileIsDirty, saveTable } = useFileStore()
+
+  const [lastSavedTs, setLastSavedTs] = useState<number | null>(currentTable?.meta.modifiedAt ?? null)
+  const [_nowTicker, setNowTicker] = useState(0)
+
+  useEffect(() => {
+    setLastSavedTs(currentTable?.meta.modifiedAt ?? null)
+  }, [currentTable?.meta.modifiedAt, currentTable?.table?.id])
+
+  useEffect(() => {
+    const id = setInterval(() => setNowTicker((n) => n + 1), 60000)
+    return () => clearInterval(id)
+  }, [])
+
   const handleHome = () => {
     navigate('/')
   }
 
   const handleSave = async () => {
-    // TODO: Implement save functionality
-    console.log('Saving project:', project)
-    markClean()
+    try {
+      await saveTable()
+      setLastSavedTs(Date.now())
+      markClean()
+    } catch (e) {
+      console.error('Failed to save table:', e)
+    }
   }
 
-  // const handleExport = async () => {
-  //   // TODO: Implement export functionality
-  //   console.log('Exporting project')
-  // }
+  useEffect(() => {
+    if (!currentTable) return
+    const interval = setInterval(async () => {
+      if (useFileStore.getState().isDirty) {
+        try {
+          await saveTable()
+          setLastSavedTs(Date.now())
+          markClean()
+        } catch (e) {
+          console.error('Autosave failed:', e)
+        }
+      }
+    }, 30000)
+    return () => clearInterval(interval)
+  }, [currentTable?.table?.id, saveTable, markClean])
+
+  const lastSavedText = formatTimestamp(lastSavedTs)
+  const tableName = currentTable?.table?.name || 'Untitled Table'
 
   const handleUndo = () => {
-    // TODO: Implement undo functionality
     console.log('Undo')
   }
 
   const handleRedo = () => {
-    // TODO: Implement redo functionality
     console.log('Redo')
   }
 
   const handleRunWorkflow = () => {
-    // TODO: Implement workflow run
     console.log('Run workflow')
   }
 
   const handleStopWorkflow = () => {
-    // TODO: Implement workflow stop
     console.log('Stop workflow')
   }
 
   const handleEmergencyStop = () => {
-    // TODO: Implement emergency stop
     console.log('EMERGENCY STOP')
   }
 
   return (
     <>
       <div className="h-12 bg-white border-b border-gray-200 flex items-center px-4 gap-2">
-        {/* Home button */}
-        <div className="flex items-center gap-1">
+        {/* Home + Title */}
+        <div className="flex items-center gap-2">
           <Button
             variant="ghost"
             size="sm"
@@ -87,12 +129,49 @@ export function Topbar() {
           >
             <HomeIcon className="w-4 h-4" />
           </Button>
-          
+          <div className="text-sm text-gray-900 font-medium truncate max-w-[28ch]" title={tableName}>
+            {tableName}
+          </div>
+        </div>
+
+        <div className="w-px h-6 bg-gray-300" />
+
+        {/* Sidebar toggles */}
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleSidebarLeft}
+            title={sidebarLeftCollapsed ? "Show Left Sidebar" : "Hide Left Sidebar"}
+          >
+            {sidebarLeftCollapsed ? (
+              <Bars3Icon className="w-4 h-4" />
+            ) : (
+              <XMarkIcon className="w-4 h-4" />
+            )}
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleSidebarRight}
+            title={sidebarRightCollapsed ? "Show Right Sidebar" : "Hide Right Sidebar"}
+          >
+            {sidebarRightCollapsed ? (
+              <Bars3Icon className="w-4 h-4" />
+            ) : (
+              <XMarkIcon className="w-4 h-4" />
+            )}
+          </Button>
+        </div>
+
+        {/* Save */}
+        <div className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="sm"
             onClick={handleSave}
-            disabled={!isDirty}
+            disabled={!currentTable}
             title="Save Project (Ctrl+S)"
           >
             <DocumentArrowDownIcon className="w-4 h-4" />
@@ -168,29 +247,6 @@ export function Topbar() {
           </Button>
         </div>
 
-        <div className="w-px h-6 bg-gray-300" />
-
-        {/* Sidebar controls */}
-        <div className="flex items-center gap-1">
-          <Button
-            variant={sidebarLeftCollapsed ? "ghost" : "secondary"}
-            size="sm"
-            onClick={toggleSidebarLeft}
-            title="Toggle Left Sidebar (Ctrl+B)"
-          >
-            {sidebarLeftCollapsed ? <Bars3Icon className="w-4 h-4" /> : <XMarkIcon className="w-4 h-4" />}
-          </Button>
-          
-          <Button
-            variant={sidebarRightCollapsed ? "ghost" : "secondary"}
-            size="sm"
-            onClick={toggleSidebarRight}
-            title="Toggle Right Sidebar (Ctrl+Shift+B)"
-          >
-            {sidebarRightCollapsed ? <Bars3Icon className="w-4 h-4" /> : <XMarkIcon className="w-4 h-4" />}
-          </Button>
-        </div>
-
         <div className="flex-1" />
 
         {/* Autosave status */}
@@ -198,7 +254,7 @@ export function Topbar() {
           {fileIsDirty ? (
             <span>Unsaved changes</span>
           ) : (
-            <span>Not saved yet</span>
+            <span>{lastSavedText ?? 'Not saved yet'}</span>
           )}
         </div>
 
