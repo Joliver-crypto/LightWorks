@@ -1,0 +1,86 @@
+{
+  "type": "laser.generic",
+  "label": "Laser",
+  "icon": "🔴",
+  "color": "#1d4ed8",
+  "category": "laser",
+  "description": "Generic laser source",
+  "size": {
+    "width": 2,
+    "height": 2
+  },
+  "commands": [
+    {
+      "name": "enable",
+      "label": "Enable",
+      "description": "Turn on the laser",
+      "args": []
+    },
+    {
+      "name": "disable",
+      "label": "Disable",
+      "description": "Turn off the laser",
+      "args": []
+    },
+    {
+      "name": "set_power",
+      "label": "Set Power",
+      "description": "Set laser power percentage",
+      "args": [
+        {
+          "name": "power",
+          "type": "number",
+          "required": true,
+          "default": 50
+        }
+      ]
+    }
+  ],
+  "telemetry": [
+    {
+      "name": "power",
+      "label": "Power",
+      "unit": "%",
+      "type": "number"
+    },
+    {
+      "name": "temperature",
+      "label": "Temperature",
+      "unit": "°C",
+      "type": "number"
+    },
+    {
+      "name": "status",
+      "label": "Status",
+      "type": "string"
+    }
+  ],
+  "properties": [
+    {
+      "name": "wavelength",
+      "label": "Wavelength",
+      "type": "number",
+      "default": 632.8
+    },
+    {
+      "name": "max_power",
+      "label": "Max Power",
+      "type": "number",
+      "default": 100
+    },
+    {
+      "name": "enabled",
+      "label": "Enabled",
+      "type": "boolean",
+      "default": false
+    }
+  ],
+  "driver": {
+    "module": "GenericLaser.scripts.laser_control",
+    "class": "LaserController",
+    "connection": {
+      "type": "simulated",
+      "port": "none"
+    }
+  }
+}

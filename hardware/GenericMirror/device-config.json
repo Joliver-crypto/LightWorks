@@ -1,0 +1,62 @@
+{
+  "type": "mirror.generic",
+  "label": "Mirror",
+  "icon": "🪞",
+  "color": "#047857",
+  "category": "optics",
+  "description": "Generic mirror for beam steering",
+  "size": {
+    "width": 1,
+    "height": 1
+  },
+  "commands": [
+    {
+      "name": "set_angle",
+      "label": "Set Angle",
+      "description": "Set mirror angle",
+      "args": [
+        {
+          "name": "angle",
+          "type": "number",
+          "required": true,
+          "default": 0
+        }
+      ]
+    }
+  ],
+  "telemetry": [
+    {
+      "name": "angle",
+      "label": "Angle",
+      "unit": "°",
+      "type": "number"
+    }
+  ],
+  "properties": [
+    {
+      "name": "reflectivity",
+      "label": "Reflectivity",
+      "type": "number",
+      "default": 0.99
+    },
+    {
+      "name": "coating",
+      "label": "Coating",
+      "type": "select",
+      "default": "aluminum",
+      "options": ["aluminum", "silver", "gold", "dielectric"]
+    }
+  ],
+  "driver": {
+    "module": "GenericMirror.scripts.mirror_control",
+    "class": "MirrorController",
+    "connection": {
+      "type": "simulated",
+      "port": "none"
+    }
+  }
+}
+
+
+
+

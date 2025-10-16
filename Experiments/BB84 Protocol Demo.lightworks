@@ -1,0 +1,115 @@
+{
+  "format": "lightworks",
+  "version": 1,
+  "meta": {
+    "app": "LightWorks",
+    "createdAt": 1757976987393,
+    "modifiedAt": 1759697281130,
+    "author": "user",
+    "checksum": "6412e293"
+  },
+  "table": {
+    "id": "f6bc1729-e7a3-42db-881b-1c86d1db44e4",
+    "name": "test",
+    "units": "mm",
+    "angleUnits": "deg",
+    "width": 900,
+    "height": 600,
+    "grid": {
+      "pitch": 25,
+      "thread": "1/4-20",
+      "origin": {
+        "x": 0,
+        "y": 0
+      },
+      "nx": 10,
+      "ny": 10,
+      "snapToHoles": true
+    },
+    "view": {
+      "zoom": 1,
+      "pan": {
+        "x": 0,
+        "y": 0
+      },
+      "showGrid": true,
+      "showBeamPaths": true
+    }
+  },
+  "components": [
+    {
+      "type": "laser.generic",
+      "label": "Laser",
+      "pose": {
+        "x": 25,
+        "y": 25,
+        "theta": 90
+      },
+      "holePose": {
+        "i": 1,
+        "j": 1,
+        "theta": 90
+      },
+      "locked": false,
+      "meta": {},
+      "id": "818312fe-c52a-4fe2-bb9f-84bc6cc02471"
+    },
+    {
+      "type": "mirror.generic",
+      "label": "Mirror",
+      "pose": {
+        "x": 125,
+        "y": 25,
+        "theta": -135
+      },
+      "holePose": {
+        "i": 5,
+        "j": 1,
+        "theta": -135
+      },
+      "locked": false,
+      "meta": {},
+      "id": "df33f5e1-75b5-414a-a4e0-15a42bc71635"
+    },
+    {
+      "type": "mirror.generic",
+      "label": "Mirror",
+      "pose": {
+        "x": 50,
+        "y": 100,
+        "theta": 90
+      },
+      "holePose": {
+        "i": 2,
+        "j": 4,
+        "theta": 90
+      },
+      "locked": false,
+      "meta": {},
+      "id": "8b5c7954-ba25-4d6a-9abe-41bd7ea8cfa7"
+    },
+    {
+      "type": "camera.andor",
+      "label": "Sensor",
+      "pose": {
+        "x": 175,
+        "y": 100,
+        "theta": -90
+      },
+      "holePose": {
+        "i": 7,
+        "j": 4,
+        "theta": -90
+      },
+      "locked": false,
+      "meta": {},
+      "id": "ec78ac07-c1c6-489c-81dc-982d4c683638"
+    }
+  ],
+  "connections": [],
+  "assets": {
+    "notes": ""
+  },
+  "_displayName": "BB84 Protocol Demo",
+  "_filePath": "/Users/justinoliver/LightWorks/Experiments/BB84 Protocol Demo.lightworks"
+}

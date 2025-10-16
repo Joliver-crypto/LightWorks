@@ -1,0 +1,191 @@
+{
+  "type": "motor.jankomotor.8812",
+  "label": "Jankomotor 8812",
+  "icon": "🔧",
+  "color": "bg-cyan-500",
+  "category": "motion",
+  "description": "Newport Picomotor 8812 precision motor controller with Arduino STEP/DIR drive (no enable required)",
+  "size": {
+    "width": 2,
+    "height": 1
+  },
+  "commands": [
+    {
+      "name": "move_a",
+      "label": "Move A",
+      "description": "Move corner A actuator",
+      "args": [
+        {
+          "name": "steps",
+          "type": "number",
+          "required": true,
+          "default": 0
+        }
+      ]
+    },
+    {
+      "name": "move_b",
+      "label": "Move B",
+      "description": "Move corner B actuator",
+      "args": [
+        {
+          "name": "steps",
+          "type": "number",
+          "required": true,
+          "default": 0
+        }
+      ]
+    },
+    {
+      "name": "move_c",
+      "label": "Move C",
+      "description": "Move corner C actuator",
+      "args": [
+        {
+          "name": "steps",
+          "type": "number",
+          "required": true,
+          "default": 0
+        }
+      ]
+    },
+    {
+      "name": "zero",
+      "label": "Zero",
+      "description": "Reset all positions to zero",
+      "args": []
+    },
+    {
+      "name": "position",
+      "label": "Position",
+      "description": "Get current positions",
+      "args": []
+    },
+    {
+      "name": "status",
+      "label": "Status",
+      "description": "Get system status",
+      "args": []
+    },
+    {
+      "name": "safety",
+      "label": "Safety",
+      "description": "Check safety status",
+      "args": []
+    },
+    {
+      "name": "set_timing",
+      "label": "Set Timing",
+      "description": "Set motor timing parameters",
+      "args": [
+        {
+          "name": "pulse_us",
+          "type": "number",
+          "required": false,
+          "default": 200
+        },
+        {
+          "name": "gap_ms",
+          "type": "number",
+          "required": false,
+          "default": 6
+        },
+        {
+          "name": "takeup",
+          "type": "number",
+          "required": false,
+          "default": 6
+        },
+        {
+          "name": "settle_ms",
+          "type": "number",
+          "required": false,
+          "default": 40
+        }
+      ]
+    },
+    {
+      "name": "ping",
+      "label": "Ping",
+      "description": "Test connection",
+      "args": []
+    },
+    {
+      "name": "stop",
+      "label": "Stop",
+      "description": "Emergency stop all movement",
+      "args": []
+    }
+  ],
+  "telemetry": [
+    {
+      "name": "pos_a",
+      "label": "Position A",
+      "unit": "steps",
+      "type": "number"
+    },
+    {
+      "name": "pos_b",
+      "label": "Position B",
+      "unit": "steps",
+      "type": "number"
+    },
+    {
+      "name": "pos_c",
+      "label": "Position C",
+      "unit": "steps",
+      "type": "number"
+    },
+    {
+      "name": "moving",
+      "label": "Moving",
+      "type": "string"
+    },
+    {
+      "name": "e_stop",
+      "label": "Emergency Stop",
+      "type": "string"
+    },
+    {
+      "name": "overcurrent",
+      "label": "Overcurrent",
+      "type": "string"
+    }
+  ],
+  "properties": [
+    {
+      "name": "pulse_us",
+      "label": "Pulse Width",
+      "type": "number",
+      "default": 200
+    },
+    {
+      "name": "gap_ms",
+      "label": "Gap Between Pulses",
+      "type": "number",
+      "default": 6
+    },
+    {
+      "name": "takeup",
+      "label": "Takeup Steps",
+      "type": "number",
+      "default": 6
+    },
+    {
+      "name": "settle_ms",
+      "label": "Settle Delay",
+      "type": "number",
+      "default": 40
+    }
+  ],
+  "driver": {
+    "module": "Jankomotor8812.scripts.jankomotor_controller",
+    "class": "SimpleJankomotorController",
+    "connection": {
+      "type": "serial",
+      "port": "auto",
+      "baudrate": 9600,
+      "timeout": 1.0
+    }
+  }
+}

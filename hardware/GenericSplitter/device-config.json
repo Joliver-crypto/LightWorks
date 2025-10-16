@@ -1,0 +1,40 @@
+{
+  "type": "splitter.generic",
+  "label": "Splitter",
+  "icon": "🔀",
+  "color": "#7c3aed",
+  "category": "optics",
+  "description": "Beam splitter for power division",
+  "size": {
+    "width": 1,
+    "height": 1
+  },
+  "commands": [],
+  "telemetry": [],
+  "properties": [
+    {
+      "name": "split_ratio",
+      "label": "Split Ratio",
+      "type": "number",
+      "default": 0.5
+    },
+    {
+      "name": "wavelength",
+      "label": "Design Wavelength",
+      "type": "number",
+      "default": 632.8
+    }
+  ],
+  "driver": {
+    "module": "GenericSplitter.scripts.splitter_control",
+    "class": "SplitterController",
+    "connection": {
+      "type": "simulated",
+      "port": "none"
+    }
+  }
+}
+
+
+
+

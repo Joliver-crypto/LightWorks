@@ -1,0 +1,115 @@
+{
+  "format": "lightworks",
+  "version": 1,
+  "meta": {
+    "app": "LightWorks",
+    "createdAt": 1758648329395,
+    "modifiedAt": 1759723440007,
+    "author": "user",
+    "checksum": "6ab4cfe5"
+  },
+  "table": {
+    "id": "bd141508-c12d-4168-91a4-9bde5fd22403",
+    "name": "alex",
+    "units": "mm",
+    "angleUnits": "deg",
+    "width": 900,
+    "height": 600,
+    "grid": {
+      "pitch": 25,
+      "thread": "1/4-20",
+      "origin": {
+        "x": 0,
+        "y": 0
+      },
+      "nx": 10,
+      "ny": 10,
+      "snapToHoles": true
+    },
+    "view": {
+      "zoom": 1,
+      "pan": {
+        "x": 0,
+        "y": 0
+      },
+      "showGrid": true,
+      "showBeamPaths": true
+    }
+  },
+  "components": [
+    {
+      "type": "motor.jankomotor.8812",
+      "label": "8812",
+      "pose": {
+        "x": 75,
+        "y": 75,
+        "theta": 90
+      },
+      "holePose": {
+        "i": 4,
+        "j": 4,
+        "theta": 90
+      },
+      "locked": false,
+      "meta": {},
+      "id": "ccd6cdaa-774c-4491-9e05-f2ddc4d96d0d"
+    },
+    {
+      "type": "laser.generic",
+      "label": "generic",
+      "pose": {
+        "x": 25,
+        "y": 50,
+        "theta": 90
+      },
+      "holePose": {
+        "i": 1,
+        "j": 2,
+        "theta": 90
+      },
+      "locked": false,
+      "meta": {},
+      "id": "3cf87223-c55d-44d1-bc66-ce2ed456742a"
+    },
+    {
+      "type": "mirror.generic",
+      "label": "generic",
+      "pose": {
+        "x": 175,
+        "y": 50,
+        "theta": -115
+      },
+      "holePose": {
+        "i": 7,
+        "j": 2,
+        "theta": -115
+      },
+      "locked": false,
+      "meta": {},
+      "id": "fa069172-1ce0-4b9a-a315-a3116ffecfee"
+    },
+    {
+      "type": "sensor.generic",
+      "label": "generic",
+      "pose": {
+        "x": 200,
+        "y": 100,
+        "theta": -90
+      },
+      "holePose": {
+        "i": 8,
+        "j": 4,
+        "theta": -90
+      },
+      "locked": false,
+      "meta": {},
+      "id": "e1ccff1e-70dc-4de7-936d-8ff96b992230"
+    }
+  ],
+  "connections": [],
+  "assets": {
+    "notes": ""
+  },
+  "_displayName": "8812 Picomotor",
+  "_filePath": "/Users/justinoliver/LightWorks/Experiments/8812 Picomotor.lightworks"
+}

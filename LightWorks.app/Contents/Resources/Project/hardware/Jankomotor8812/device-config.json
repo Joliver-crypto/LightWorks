@@ -1,0 +1,196 @@
+{
+  "type": "motor.jankomotor.8812",
+  "label": "Jankomotor 8812",
+  "icon": "🔧",
+  "color": "bg-cyan-500",
+  "category": "motion",
+  "description": "Newport Picomotor 8812 precision motor controller with Arduino PH/EN drive",
+  "size": {
+    "width": 2,
+    "height": 1
+  },
+  "commands": [
+    {
+      "name": "enable",
+      "label": "Enable",
+      "description": "Enable motor system",
+      "args": []
+    },
+    {
+      "name": "disable",
+      "label": "Disable",
+      "description": "Disable motor system",
+      "args": []
+    },
+    {
+      "name": "home",
+      "label": "Home",
+      "description": "Home both axes",
+      "args": []
+    },
+    {
+      "name": "move_to",
+      "label": "Move To",
+      "description": "Move to absolute position",
+      "args": [
+        {
+          "name": "x",
+          "type": "number",
+          "required": true,
+          "default": 0
+        },
+        {
+          "name": "y",
+          "type": "number",
+          "required": true,
+          "default": 0
+        }
+      ]
+    },
+    {
+      "name": "move_relative",
+      "label": "Move Relative",
+      "description": "Move relative distance",
+      "args": [
+        {
+          "name": "x_steps",
+          "type": "number",
+          "required": true,
+          "default": 0
+        },
+        {
+          "name": "y_steps",
+          "type": "number",
+          "required": true,
+          "default": 0
+        }
+      ]
+    },
+    {
+      "name": "raster_scan",
+      "label": "Raster Scan",
+      "description": "Perform raster scan",
+      "args": [
+        {
+          "name": "x_start",
+          "type": "number",
+          "required": true,
+          "default": 0
+        },
+        {
+          "name": "y_start",
+          "type": "number",
+          "required": true,
+          "default": 0
+        },
+        {
+          "name": "x_end",
+          "type": "number",
+          "required": true,
+          "default": 1000
+        },
+        {
+          "name": "y_end",
+          "type": "number",
+          "required": true,
+          "default": 1000
+        }
+      ]
+    },
+    {
+      "name": "emergency_stop",
+      "label": "Emergency Stop",
+      "description": "Emergency stop all movement",
+      "args": []
+    },
+    {
+      "name": "get_position",
+      "label": "Get Position",
+      "description": "Get current position",
+      "args": []
+    },
+    {
+      "name": "get_status",
+      "label": "Get Status",
+      "description": "Get system status",
+      "args": []
+    }
+  ],
+  "telemetry": [
+    {
+      "name": "x_pos",
+      "label": "X Position",
+      "unit": "steps",
+      "type": "number"
+    },
+    {
+      "name": "y_pos",
+      "label": "Y Position",
+      "unit": "steps",
+      "type": "number"
+    },
+    {
+      "name": "enabled",
+      "label": "Enabled",
+      "type": "boolean"
+    },
+    {
+      "name": "moving",
+      "label": "Moving",
+      "type": "boolean"
+    },
+    {
+      "name": "emergency_stop",
+      "label": "Emergency Stop",
+      "type": "boolean"
+    }
+  ],
+  "properties": [
+    {
+      "name": "pulse_us",
+      "label": "Pulse Width",
+      "type": "number",
+      "default": 800
+    },
+    {
+      "name": "gap_ms",
+      "label": "Gap Between Pulses",
+      "type": "number",
+      "default": 6
+    },
+    {
+      "name": "takeup_steps",
+      "label": "Takeup Steps",
+      "type": "number",
+      "default": 8
+    },
+    {
+      "name": "settle_x_ms",
+      "label": "X Settle Delay",
+      "type": "number",
+      "default": 35
+    },
+    {
+      "name": "settle_y_ms",
+      "label": "Y Settle Delay",
+      "type": "number",
+      "default": 45
+    },
+    {
+      "name": "enabled",
+      "label": "Enabled",
+      "type": "boolean",
+      "default": false
+    }
+  ],
+  "driver": {
+    "module": "Jankomotor8812.scripts.jankomotor_controller",
+    "class": "SimpleJankomotorController",
+    "connection": {
+      "type": "serial",
+      "port": "auto",
+      "baudrate": 9600,
+      "timeout": 1.0
+    }
+  }
+}

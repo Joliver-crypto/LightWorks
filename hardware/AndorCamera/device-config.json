@@ -1,0 +1,108 @@
+{
+  "type": "camera.andor",
+  "label": "Camera",
+  "icon": "📷",
+  "color": "#0ea5e9",
+  "category": "detection",
+  "description": "Andor scientific camera",
+  "size": {
+    "width": 2,
+    "height": 2
+  },
+  "commands": [
+    {
+      "name": "initialize",
+      "label": "Initialize",
+      "description": "Initialize camera",
+      "args": []
+    },
+    {
+      "name": "start_acquisition",
+      "label": "Start Acquisition",
+      "description": "Start image acquisition",
+      "args": []
+    },
+    {
+      "name": "stop_acquisition",
+      "label": "Stop Acquisition",
+      "description": "Stop image acquisition",
+      "args": []
+    },
+    {
+      "name": "set_exposure",
+      "label": "Set Exposure",
+      "description": "Set exposure time",
+      "args": [
+        {
+          "name": "time_ms",
+          "type": "number",
+          "required": true,
+          "default": 100
+        }
+      ]
+    },
+    {
+      "name": "acquire_frame",
+      "label": "Acquire Frame",
+      "description": "Acquire single frame",
+      "args": []
+    }
+  ],
+  "telemetry": [
+    {
+      "name": "temperature",
+      "label": "Temperature",
+      "unit": "°C",
+      "type": "number"
+    },
+    {
+      "name": "exposure_time",
+      "label": "Exposure Time",
+      "unit": "ms",
+      "type": "number"
+    },
+    {
+      "name": "frame_count",
+      "label": "Frame Count",
+      "type": "number"
+    },
+    {
+      "name": "image",
+      "label": "Image",
+      "type": "image"
+    }
+  ],
+  "properties": [
+    {
+      "name": "pixel_size",
+      "label": "Pixel Size",
+      "type": "number",
+      "default": 6.5
+    },
+    {
+      "name": "resolution",
+      "label": "Resolution",
+      "type": "select",
+      "default": "1024x1024",
+      "options": ["512x512", "1024x1024", "2048x2048"]
+    },
+    {
+      "name": "cooling",
+      "label": "Cooling",
+      "type": "boolean",
+      "default": true
+    }
+  ],
+  "driver": {
+    "module": "AndorCamera.scripts.camera_control",
+    "class": "CameraController",
+    "connection": {
+      "type": "usb",
+      "port": "auto"
+    }
+  }
+}
+
+
+
+

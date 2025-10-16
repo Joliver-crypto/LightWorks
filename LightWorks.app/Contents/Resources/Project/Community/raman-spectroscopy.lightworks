@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2025-01-27T10:00:00.000Z",
+  "name": "Raman Spectroscopy Setup",
+  "description": "Probe vibrational states in materials using Raman scattering.",
+  "difficulty": "Intermediate",
+  "tags": ["spectroscopy", "raman", "materials"],
+  "author": "Community",
+  "config": {
+    "rows": 16,
+    "cols": 20,
+    "holePitchMm": 25,
+    "devices": [
+      {
+        "id": "laser-raman",
+        "type": "laser",
+        "position": { "row": 3, "col": 2 },
+        "rotation": 0,
+        "properties": {
+          "wavelength": 532,
+          "power": 100.0,
+          "beamDiameter": 1.0
+        }
+      },
+      {
+        "id": "lens-1",
+        "type": "lens",
+        "position": { "row": 3, "col": 4 },
+        "rotation": 0,
+        "properties": {
+          "focalLength": 50,
+          "diameter": 25
+        }
+      },
+      {
+        "id": "sample-stage",
+        "type": "sampleStage",
+        "position": { "row": 3, "col": 6 },
+        "rotation": 0,
+        "properties": {
+          "sampleType": "solid",
+          "thickness": 1.0
+        }
+      },
+      {
+        "id": "collection-lens",
+        "type": "lens",
+        "position": { "row": 3, "col": 8 },
+        "rotation": 0,
+        "properties": {
+          "focalLength": 75,
+          "diameter": 25
+        }
+      },
+      {
+        "id": "notch-filter",
+        "type": "notchFilter",
+        "position": { "row": 3, "col": 10 },
+        "rotation": 0,
+        "properties": {
+          "centerWavelength": 532,
+          "bandwidth": 10,
+          "rejection": 6.0
+        }
+      },
+      {
+        "id": "spectrometer",
+        "type": "spectrometer",
+        "position": { "row": 3, "col": 12 },
+        "rotation": 0,
+        "properties": {
+          "grating": 1200,
+          "blazeWavelength": 500,
+          "resolution": 0.1
+        }
+      },
+      {
+        "id": "ccd-detector",
+        "type": "ccdDetector",
+        "position": { "row": 3, "col": 14 },
+        "rotation": 0,
+        "properties": {
+          "pixelSize": 20,
+          "quantumEfficiency": 0.6,
+          "darkCurrent": 0.1
+        }
+      },
+      {
+        "id": "monochromator",
+        "type": "monochromator",
+        "position": { "row": 3, "col": 16 },
+        "rotation": 0,
+        "properties": {
+          "wavelengthRange": [400, 800],
+          "resolution": 0.5
+        }
+      },
+      {
+        "id": "pmt-detector",
+        "type": "pmtDetector",
+        "position": { "row": 3, "col": 18 },
+        "rotation": 0,
+        "properties": {
+          "quantumEfficiency": 0.3,
+          "gain": 1000000,
+          "darkCountRate": 10
+        }
+      }
+    ],
+    "lastSaved": "2025-01-27T10:00:00.000Z"
+  }
+}
+

@@ -1,0 +1,65 @@
+{
+  "type": "sensor.generic",
+  "label": "Sensor",
+  "icon": "📊",
+  "color": "#10b981",
+  "category": "detection",
+  "description": "Generic sensor device",
+  "size": {
+    "width": 1,
+    "height": 1
+  },
+  "commands": [
+    {
+      "name": "read",
+      "label": "Read",
+      "description": "Read sensor value",
+      "args": []
+    }
+  ],
+  "telemetry": [
+    {
+      "name": "value",
+      "label": "Value",
+      "type": "number"
+    },
+    {
+      "name": "unit",
+      "label": "Unit",
+      "type": "string"
+    }
+  ],
+  "properties": [
+    {
+      "name": "sensor_type",
+      "label": "Sensor Type",
+      "type": "select",
+      "default": "voltage",
+      "options": ["voltage", "current", "temperature", "pressure"]
+    },
+    {
+      "name": "range_min",
+      "label": "Min Range",
+      "type": "number",
+      "default": 0
+    },
+    {
+      "name": "range_max",
+      "label": "Max Range",
+      "type": "number",
+      "default": 10
+    }
+  ],
+  "driver": {
+    "module": "GenericSensor.scripts.sensor_control",
+    "class": "SensorController",
+    "connection": {
+      "type": "simulated",
+      "port": "none"
+    }
+  }
+}
+
+
+
+

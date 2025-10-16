@@ -1,0 +1,122 @@
+{
+  "type": "stage.newport.esp",
+  "label": "Stage",
+  "icon": "📐",
+  "color": "#ef4444",
+  "category": "motion",
+  "description": "Newport ESP precision stage",
+  "size": {
+    "width": 3,
+    "height": 2
+  },
+  "commands": [
+    {
+      "name": "enable",
+      "label": "Enable",
+      "description": "Enable stage",
+      "args": []
+    },
+    {
+      "name": "disable",
+      "label": "Disable",
+      "description": "Disable stage",
+      "args": []
+    },
+    {
+      "name": "home",
+      "label": "Home",
+      "description": "Home stage",
+      "args": []
+    },
+    {
+      "name": "move_abs",
+      "label": "Move Absolute",
+      "description": "Move to absolute position",
+      "args": [
+        {
+          "name": "x",
+          "type": "number",
+          "required": true,
+          "default": 0
+        },
+        {
+          "name": "y",
+          "type": "number",
+          "required": true,
+          "default": 0
+        }
+      ]
+    },
+    {
+      "name": "move_rel",
+      "label": "Move Relative",
+      "description": "Move relative distance",
+      "args": [
+        {
+          "name": "dx",
+          "type": "number",
+          "required": true,
+          "default": 0
+        },
+        {
+          "name": "dy",
+          "type": "number",
+          "required": true,
+          "default": 0
+        }
+      ]
+    }
+  ],
+  "telemetry": [
+    {
+      "name": "x",
+      "label": "X Position",
+      "unit": "mm",
+      "type": "number"
+    },
+    {
+      "name": "y",
+      "label": "Y Position",
+      "unit": "mm",
+      "type": "number"
+    },
+    {
+      "name": "status",
+      "label": "Status",
+      "type": "string"
+    }
+  ],
+  "properties": [
+    {
+      "name": "max_velocity",
+      "label": "Max Velocity",
+      "type": "number",
+      "default": 5.0
+    },
+    {
+      "name": "resolution",
+      "label": "Resolution",
+      "type": "number",
+      "default": 0.1
+    },
+    {
+      "name": "enabled",
+      "label": "Enabled",
+      "type": "boolean",
+      "default": false
+    }
+  ],
+  "driver": {
+    "module": "NewportESP.scripts.stage_control",
+    "class": "StageController",
+    "connection": {
+      "type": "serial",
+      "port": "auto",
+      "baudrate": 9600
+    }
+  }
+}
+
+
+
+

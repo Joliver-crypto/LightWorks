@@ -1,0 +1,98 @@
+{
+  "format": "lightworks",
+  "version": 1,
+  "meta": {
+    "app": "LightWorks",
+    "createdAt": 1758136336160,
+    "modifiedAt": 1760577166166,
+    "author": "user",
+    "checksum": "309160bb"
+  },
+  "table": {
+    "id": "2d70c9ee-41d3-4714-ac7a-ac20a9a19121",
+    "name": "stephen",
+    "units": "mm",
+    "angleUnits": "deg",
+    "width": 900,
+    "height": 600,
+    "grid": {
+      "pitch": 25,
+      "thread": "1/4-20",
+      "origin": {
+        "x": 0,
+        "y": 0
+      },
+      "nx": 100,
+      "ny": 100,
+      "snapToHoles": true
+    },
+    "view": {
+      "zoom": 1,
+      "pan": {
+        "x": 0,
+        "y": 0
+      },
+      "showGrid": true,
+      "showBeamPaths": true
+    }
+  },
+  "components": [
+    {
+      "type": "laser.generic",
+      "label": "laser",
+      "pose": {
+        "x": 75,
+        "y": 100,
+        "theta": 90
+      },
+      "holePose": {
+        "i": 3,
+        "j": 4,
+        "theta": 90
+      },
+      "locked": true,
+      "meta": {},
+      "id": "2748b505-259c-4465-bde2-ce35b9f6eb53"
+    },
+    {
+      "type": "mirror.generic",
+      "label": "generic",
+      "pose": {
+        "x": 150,
+        "y": 100,
+        "theta": -125
+      },
+      "holePose": {
+        "i": 6,
+        "j": 4,
+        "theta": -125
+      },
+      "locked": true,
+      "meta": {},
+      "id": "1df77e70-81cb-49fa-ba4f-6a5a7859ef98"
+    },
+    {
+      "type": "motor.thorlabs.kdc101",
+      "label": "kdc101",
+      "pose": {
+        "x": 250,
+        "y": 500,
+        "theta": 0
+      },
+      "holePose": {
+        "i": 10,
+        "j": 20,
+        "theta": 0
+      },
+      "locked": false,
+      "meta": {},
+      "id": "2bf56130-1fde-4f50-89a2-e0cdb6d10870"
+    }
+  ],
+  "connections": [],
+  "assets": {
+    "notes": ""
+  },
+  "_displayName": "Michelson Interferometer",
+  "_filePath": "/Users/justinoliver/LightWorks/Experiments/Michelson Interferometer.lightworks"
+}

@@ -70,14 +70,14 @@ fi
 
 # Check for port conflicts and clean up
 echo -e "${BLUE}🔍 Checking for port conflicts...${NC}"
-if ! check_port 3005; then
-    echo -e "${YELLOW}⚠️  Port 3005 is already in use. Cleaning up...${NC}"
-    kill_port 3005
+if ! check_port 3006; then
+    echo -e "${YELLOW}⚠️  Port 3006 is already in use. Cleaning up...${NC}"
+    kill_port 3006
     sleep 2
 fi
 
 echo -e "${BLUE}🚀 Starting LightWorks Development Environment...${NC}"
-echo -e "${CYAN}   • Vite dev server (http://localhost:3005)${NC}"
+echo -e "${CYAN}   • Vite dev server (http://localhost:3006)${NC}"
 echo -e "${CYAN}   • Electron application${NC}"
 echo ""
 echo -e "${YELLOW}💡 Press Ctrl+C to stop both processes${NC}"
@@ -92,7 +92,7 @@ VITE_PID=$!
 # Wait for Vite to be ready
 echo -e "${YELLOW}⏳ Waiting for Vite dev server to be ready...${NC}"
 for i in {1..30}; do
-    if curl -s http://localhost:3005 > /dev/null 2>&1; then
+    if curl -s http://localhost:3006 > /dev/null 2>&1; then
         echo -e "${GREEN}✅ Vite dev server is ready!${NC}"
         break
     fi

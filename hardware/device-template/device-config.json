@@ -1,0 +1,57 @@
+{
+  "type": "device.manufacturer.model",
+  "label": "Device Name",
+  "icon": "🔧",
+  "color": "bg-blue-500",
+  "category": "motion",
+  "description": "Brief description of the device",
+  "size": {
+    "width": 2,
+    "height": 1
+  },
+  "commands": [
+    {
+      "name": "command_name",
+      "label": "Command Label",
+      "description": "What this command does",
+      "args": [
+        {
+          "name": "parameter_name",
+          "type": "number",
+          "required": true,
+          "default": 0
+        }
+      ]
+    }
+  ],
+  "telemetry": [
+    {
+      "name": "telemetry_name",
+      "label": "Telemetry Label",
+      "unit": "unit",
+      "type": "number"
+    }
+  ],
+  "properties": [
+    {
+      "name": "property_name",
+      "label": "Property Label",
+      "type": "number",
+      "default": 0
+    }
+  ],
+  "driver": {
+    "module": "DeviceFolder.scripts.control_module",
+    "class": "DeviceController",
+    "connection": {
+      "type": "serial",
+      "port": "auto",
+      "baudrate": 9600,
+      "timeout": 1.0
+    }
+  }
+}
+
+
+
+

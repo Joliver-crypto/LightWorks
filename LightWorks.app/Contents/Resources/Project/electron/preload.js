@@ -19,26 +19,22 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Platform info
   platform: process.platform,
   isElectron: true,
-  getHomeDir: () => ipcRenderer.invoke('get-home-dir')
+  getHomeDir: () => ipcRenderer.invoke('get-home-dir'),
+  
+  // Serial communication
+  connectSerial: (options) => ipcRenderer.invoke('connect-serial', options),
+  sendSerialCommand: (command) => ipcRenderer.invoke('send-serial-command', command),
+  disconnectSerial: () => ipcRenderer.invoke('disconnect-serial')
 })
 
 // Experiments API
 contextBridge.exposeInMainWorld('api', {
-  createExperiment: (name, config) => {
-    console.log('Preload: createExperiment called with', { name, config });
-    return ipcRenderer.invoke('experiments:create', { name, config });
-  },
+  createExperiment: (name, config) => 
+    ipcRenderer.invoke('experiments:create', { name, config }),
   
-  getExperimentsDir: () => {
-    console.log('Preload: getExperimentsDir called');
-    return ipcRenderer.invoke('experiments:get-dir');
-  },
+  getExperimentsDir: () => 
+    ipcRenderer.invoke('experiments:get-dir'),
   
-  openExperimentsFolder: () => {
-    console.log('Preload: openExperimentsFolder called');
-    return ipcRenderer.invoke('experiments:open-dir');
-  }
+  openExperimentsFolder: () => 
+    ipcRenderer.invoke('experiments:open-dir')
 })
-
-// Debug: Log what we're exposing
-console.log('Preload: Exposed electronAPI and api to window');

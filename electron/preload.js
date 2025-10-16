@@ -19,7 +19,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Platform info
   platform: process.platform,
   isElectron: true,
-  getHomeDir: () => ipcRenderer.invoke('get-home-dir')
+  getHomeDir: () => ipcRenderer.invoke('get-home-dir'),
+  
+  // Serial communication
+  connectSerial: (options) => ipcRenderer.invoke('connect-serial', options),
+  sendSerialCommand: (command) => ipcRenderer.invoke('send-serial-command', command),
+  disconnectSerial: () => ipcRenderer.invoke('disconnect-serial')
 })
 
 // Experiments API

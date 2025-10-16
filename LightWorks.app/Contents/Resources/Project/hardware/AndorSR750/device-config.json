@@ -1,0 +1,103 @@
+{
+  "type": "spectrograph.andor.sr750",
+  "label": "SR-750",
+  "icon": "🌈",
+  "color": "#a855f7",
+  "category": "analysis",
+  "description": "Andor SR-750 spectrograph",
+  "size": {
+    "width": 3,
+    "height": 2
+  },
+  "commands": [
+    {
+      "name": "initialize",
+      "label": "Initialize",
+      "description": "Initialize spectrograph",
+      "args": []
+    },
+    {
+      "name": "set_wavelength",
+      "label": "Set Wavelength",
+      "description": "Set center wavelength",
+      "args": [
+        {
+          "name": "wavelength",
+          "type": "number",
+          "required": true,
+          "default": 500
+        }
+      ]
+    },
+    {
+      "name": "acquire_spectrum",
+      "label": "Acquire Spectrum",
+      "description": "Acquire spectrum",
+      "args": [
+        {
+          "name": "exposure_ms",
+          "type": "number",
+          "required": true,
+          "default": 1000
+        }
+      ]
+    }
+  ],
+  "telemetry": [
+    {
+      "name": "wavelength",
+      "label": "Wavelength",
+      "unit": "nm",
+      "type": "number"
+    },
+    {
+      "name": "grating_position",
+      "label": "Grating Position",
+      "type": "number"
+    },
+    {
+      "name": "temperature",
+      "label": "Temperature",
+      "unit": "°C",
+      "type": "number"
+    },
+    {
+      "name": "spectrum",
+      "label": "Spectrum",
+      "type": "image"
+    }
+  ],
+  "properties": [
+    {
+      "name": "wavelength_range",
+      "label": "Wavelength Range",
+      "type": "select",
+      "default": "200-1000",
+      "options": ["200-1000", "300-800", "400-700"]
+    },
+    {
+      "name": "resolution",
+      "label": "Resolution",
+      "type": "number",
+      "default": 0.1
+    },
+    {
+      "name": "cooling",
+      "label": "Cooling",
+      "type": "boolean",
+      "default": true
+    }
+  ],
+  "driver": {
+    "module": "AndorSR750.scripts.spectrograph_control",
+    "class": "SpectrographController",
+    "connection": {
+      "type": "usb",
+      "port": "auto"
+    }
+  }
+}
+
+
+
+

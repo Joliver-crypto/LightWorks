@@ -1,0 +1,109 @@
+{
+  "type": "motor.thorlabs.kdc101",
+  "label": "Motor",
+  "icon": "⚙️",
+  "color": "#f59e0b",
+  "category": "motion",
+  "description": "Thorlabs KDC101 motor controller",
+  "size": {
+    "width": 2,
+    "height": 1
+  },
+  "commands": [
+    {
+      "name": "enable",
+      "label": "Enable",
+      "description": "Enable motor",
+      "args": []
+    },
+    {
+      "name": "disable",
+      "label": "Disable",
+      "description": "Disable motor",
+      "args": []
+    },
+    {
+      "name": "home",
+      "label": "Home",
+      "description": "Home motor",
+      "args": []
+    },
+    {
+      "name": "move_abs",
+      "label": "Move Absolute",
+      "description": "Move to absolute position",
+      "args": [
+        {
+          "name": "position",
+          "type": "number",
+          "required": true,
+          "default": 0
+        }
+      ]
+    },
+    {
+      "name": "move_rel",
+      "label": "Move Relative",
+      "description": "Move relative distance",
+      "args": [
+        {
+          "name": "distance",
+          "type": "number",
+          "required": true,
+          "default": 0
+        }
+      ]
+    }
+  ],
+  "telemetry": [
+    {
+      "name": "position",
+      "label": "Position",
+      "unit": "mm",
+      "type": "number"
+    },
+    {
+      "name": "velocity",
+      "label": "Velocity",
+      "unit": "mm/s",
+      "type": "number"
+    },
+    {
+      "name": "status",
+      "label": "Status",
+      "type": "string"
+    }
+  ],
+  "properties": [
+    {
+      "name": "max_velocity",
+      "label": "Max Velocity",
+      "type": "number",
+      "default": 10.0
+    },
+    {
+      "name": "acceleration",
+      "label": "Acceleration",
+      "type": "number",
+      "default": 5.0
+    },
+    {
+      "name": "enabled",
+      "label": "Enabled",
+      "type": "boolean",
+      "default": false
+    }
+  ],
+  "driver": {
+    "module": "ThorlabsKDC101.scripts.motor_control",
+    "class": "MotorController",
+    "connection": {
+      "type": "usb",
+      "port": "auto"
+    }
+  }
+}
+
+
+
+

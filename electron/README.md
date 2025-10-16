@@ -48,3 +48,10 @@ The app uses Electron's context isolation and preload scripts for security:
 - All file system operations go through IPC to the main process
 - Only necessary APIs are exposed to the renderer
 
+
+
+
+
+
+
+
