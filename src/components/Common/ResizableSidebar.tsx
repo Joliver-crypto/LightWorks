@@ -65,7 +65,7 @@ export function ResizableSidebar({
     <div
       ref={sidebarRef}
       className={clsx(
-        'relative bg-white border-r border-gray-200 flex flex-col',
+        'relative bg-white border-r border-gray-200 flex flex-col h-full',
         side === 'right' && 'border-l border-r-0',
         isCollapsed && 'overflow-hidden',
         // avoid animating width while actively dragging for smoother feel
@@ -115,7 +115,7 @@ export function ResizableSidebar({
 
       {/* Sidebar content */}
       <div className={clsx(
-        'flex-1 flex flex-col',
+        'flex-1 flex flex-col h-full min-h-0',
         isCollapsed && 'opacity-0 pointer-events-none'
       )}>
         {children}

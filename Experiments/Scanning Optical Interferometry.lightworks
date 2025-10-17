@@ -1,0 +1,102 @@
+{
+  "format": "lightworks",
+  "version": 1,
+  "meta": {
+    "app": "LightWorks",
+    "createdAt": 1760662378093,
+    "modifiedAt": 1760669341060,
+    "author": "user",
+    "checksum": "9aebb58"
+  },
+  "table": {
+    "id": "c748240d-437b-4d06-b20f-793957df2f1a",
+    "name": "Scanning Optical Interferometry",
+    "units": "mm",
+    "angleUnits": "deg",
+    "width": 2325,
+    "height": 1125,
+    "grid": {
+      "pitch": 25,
+      "thread": "1/4-20",
+      "origin": {
+        "x": 0,
+        "y": 0
+      },
+      "nx": 94,
+      "ny": 46,
+      "snapToHoles": true
+    },
+    "view": {
+      "zoom": 1,
+      "pan": {
+        "x": 0,
+        "y": 0
+      },
+      "showGrid": true,
+      "showBeamPaths": true
+    }
+  },
+  "components": [
+    {
+      "type": "camera.dmk37",
+      "label": "dmk37",
+      "pose": {
+        "x": 75,
+        "y": 175,
+        "theta": 0
+      },
+      "holePose": {
+        "i": 3,
+        "j": 7,
+        "theta": 0
+      },
+      "locked": false,
+      "meta": {},
+      "id": "2fc3e664-bec9-40d7-9dbb-3969259f7b34"
+    },
+    {
+      "type": "polarizer.generic",
+      "label": "generic",
+      "pose": {
+        "x": 50,
+        "y": 200,
+        "theta": 0
+      },
+      "holePose": {
+        "i": 2,
+        "j": 8,
+        "theta": 0
+      },
+      "locked": false,
+      "meta": {},
+      "id": "f3952806-478e-4322-be26-374bc905c983"
+    },
+    {
+      "type": "laser.generic",
+      "label": "generic",
+      "pose": {
+        "x": 100,
+        "y": 100,
+        "theta": -180
+      },
+      "holePose": {
+        "i": 4,
+        "j": 4,
+        "theta": -180
+      },
+      "locked": false,
+      "size": {
+        "width": 1,
+        "height": 3
+      },
+      "meta": {},
+      "id": "16d30ba8-5e7e-40ed-8796-3eda17ba0e6f"
+    }
+  ],
+  "connections": [],
+  "assets": {
+    "notes": ""
+  },
+  "_displayName": "Scanning Optical Interferometry",
+  "_filePath": "/Users/justinoliver/LightWorks/Experiments/Scanning Optical Interferometry.lightworks"
+}

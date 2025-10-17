@@ -1,131 +1,168 @@
 /*
-  8812 Picomotor Dual-Mount Controller (SELECT A|B, MOVE corner A|B|C)
-  Wiring summary (matches your harnesses exactly):
+  8801 Picomotor Controller — Single Driver, 3 Corners (A/B/C)
+  Integration-ready: NO ENABLE REQUIRED (always ready to move).
 
-  Driver A (Pico A):
-    Corner B: STEP D11 -> DB15 pin 7 (StepB), DIR D10 -> pin 14 (DirB)
-    Corner C: STEP D9  -> DB15 pin 9 (StepC), DIR D8  -> pin 13 (DirC)
-    Corner A: not wired (DB15 pin 8/15 not connected yet)
-    GND     -> DB15 pin 11
+  ============================
+  WIRING SUMMARY (EXACT MAP)
+  ============================
+    DB-15 pin  8  (StepA) -> Arduino D3   (STEP A)
+    DB-15 pin 15  (DirA)  -> Arduino D4   (DIR  A)
 
-  Driver B (Pico B):
-    Corner A: STEP D6  -> DB15 pin 8 (StepA), DIR D5  -> pin 15 (DirA)
-    Corner C: STEP D2  -> DB15 pin 9 (StepC), DIR D3  -> pin 13 (DirC)
-    Corner B: not wired
-    GND     -> DB15 pin 11
+    DB-15 pin  7  (StepB) -> Arduino D5   (STEP B)
+    DB-15 pin 14  (DirB)  -> Arduino D7   (DIR  B)
 
-  STEP uses negative-edge (idle HIGH; falling edge = one step).
+    DB-15 pin  9  (StepC) -> Arduino D6   (STEP C)
+    DB-15 pin 13  (DirC)  -> Arduino D8   (DIR  C)
+
+    DB-15 pin 11  (GND)   -> Arduino GND  (common ground, REQUIRED)
+    DB-15 pin 12  (Clock) -> Arduino D10  (OPTIONAL: input only)
+
+  Notes:
+  - STEP uses NEGATIVE EDGE stepping: idle HIGH; a HIGH->LOW transition = one step.
+  - Do NOT connect 8801 +5V (DB-15 pin 5) to Arduino 5V. Power Arduino separately; share GND only.
+  - Clock (DB-15 pin 12) is optional; if used, configure D10 as INPUT and never drive it.
 */
 
-struct CornerPins { uint8_t dir; uint8_t step; }; // 0 means "not wired"
-struct DriverPins { CornerPins A; CornerPins B; CornerPins C; };
+#include <Arduino.h>
 
-// --------- Pin maps (exactly your wiring) ----------
-const DriverPins DRIVER_A = {
-  /* A */ {0, 0},           // not wired yet
-  /* B */ {10, 11},         // DIR D10, STEP D11
-  /* C */ { 8,  9}          // DIR D8,  STEP D9
-};
-const DriverPins DRIVER_B = {
-  /* A */ { 5,  6},         // DIR D5,  STEP D6
-  /* B */ {0, 0},           // not wired yet
-  /* C */ { 3,  2}          // DIR D3,  STEP D2
-};
+// ---------- Put CornerPins FIRST to avoid Arduino auto-prototype issues ----------
+struct CornerPins { uint8_t dir; uint8_t step; };
 
-// --------- Active selection ----------
-const DriverPins* ACTIVE = &DRIVER_A;
-char ACTIVE_NAME = 'A';
+// ---------- Forward prototypes (prevents IDE from auto-making wrong ones) ----------
+void idleHigh(const CornerPins& p);
+void setDir(const CornerPins& p, long steps);
+void pulseStep(const CornerPins& p);
+bool checkSafety();
+void moveCorner(const CornerPins& p, char name, long steps, long& pos);
+void printHelp();
+void handleCommand(String line);
 
-// --------- Safety / aux ----------
-const uint8_t EMERGENCY_STOP_PIN = 12; // LOW = pressed
-const uint8_t CURRENT_SENSE_PIN  = A0; // optional
-const uint8_t LED_PIN            = A3;
-const uint8_t TRIGGER_OUT_PIN    = A2;
+// ---------------- Pin Map (matches your wiring exactly) ----------------
+#define STEP_A 3
+#define DIR_A  4
 
+#define STEP_B 5
+#define DIR_B  7
+
+#define STEP_C 6
+#define DIR_C  8
+
+#define CLK_8801 10   // optional read-only clock from 8801; set to -1 to disable
+
+// ---------------- Aux / Safety (customize or disable as needed) --------
+#define EMERGENCY_STOP_PIN 12   // LOW = pressed (uses INPUT_PULLUP)
+#define CURRENT_SENSE_PIN  A0   // optional current sense (0..1023), or tie to GND if unused
+#define LED_PIN            A3   // status LED (on = ok/idle)
+#define TRIGGER_OUT_PIN    A2   // reserved output (idle LOW)
+
+// ---------------- Motion parameters -----------------------------------
 struct MotionParams {
-  unsigned int pulse_us = 800;  // step low width
-  unsigned int gap_ms   = 6;    // delay between steps
-  uint8_t      takeup   = 8;    // pre-steps for stiction
-  unsigned int settle_ms= 40;   // settle after move
+  unsigned int pulse_low_us = 200; // LOW hold time for step pulse (µs); falling edge does the step
+  unsigned int gap_ms       = 6;   // delay between steps (ms) => sets speed
+  uint8_t      takeup       = 6;   // pre-steps to overcome stiction/backlash
+  unsigned int settle_ms    = 40;  // settle after move (ms)
 } mp;
 
-const int   MAX_CURRENT_MA      = 500;
-const float CURRENT_MA_PER_CNT  = 1000.0f / 1023.0f;
-const unsigned long WATCHDOG_MS = 30000;   // relaxed for bring-up/testing
-const bool IDE_MODE             = true;    // disables watchdog if true
+// ---------------- Safety thresholds (optional) -------------------------
+const int   MAX_CURRENT_MA      = 500;                  // optional
+const float CURRENT_MA_PER_CNT  = 1000.0f / 1023.0f;    // scale ADC→mA (example)
 
+// ---------------- State -------------------------------------------------
 struct SystemState {
-  long a_pos=0, b_pos=0, c_pos=0;
-  bool enabled=false, moving=false;
-  bool e_stop=false, overcurrent=false;
-  unsigned long last_heartbeat_ms=0;
+  long posA = 0, posB = 0, posC = 0;
+  bool moving = false;
+  bool e_stop = false;
+  bool overcurrent = false;
+  unsigned long last_heartbeat_ms = 0;
 } st;
 
 inline void heartbeat(){ st.last_heartbeat_ms = millis(); }
 
-bool checkSafety(bool enforceWatchdog=true){
-  st.e_stop = (digitalRead(EMERGENCY_STOP_PIN)==LOW);
+// ---------------- Corner pin bundles -----------------------------------
+const CornerPins CORNER_A = { DIR_A, STEP_A };
+const CornerPins CORNER_B = { DIR_B, STEP_B };
+const CornerPins CORNER_C = { DIR_C, STEP_C };
+
+// ---------------- Helpers ----------------------------------------------
+void idleHigh(const CornerPins& p){
+  // Negative-edge stepping: idle HIGH on STEP; DIR default LOW
+  if (p.dir)  digitalWrite(p.dir, LOW);
+  if (p.step) digitalWrite(p.step, HIGH);
+}
+
+void setDir(const CornerPins& p, long steps){
+  // HIGH = forward, LOW = reverse (flip if your mechanics are inverted)
+  digitalWrite(p.dir, (steps > 0) ? HIGH : LOW);
+  delayMicroseconds(1500); // small settle after DIR change
+}
+
+void pulseStep(const CornerPins& p){
+  // generate falling edge while idling HIGH
+  digitalWrite(p.step, HIGH);
+  delayMicroseconds(2);
+  digitalWrite(p.step, LOW);                  // FALLING EDGE = one step
+  delayMicroseconds(mp.pulse_low_us);        // hold LOW
+  digitalWrite(p.step, HIGH);                // back to idle HIGH
+}
+
+bool checkSafety(){
+  // E-STOP: active LOW
+  pinMode(EMERGENCY_STOP_PIN, INPUT_PULLUP);
+  st.e_stop = (digitalRead(EMERGENCY_STOP_PIN) == LOW);
+
+  // Optional current sense (ignore if not wired)
   int adc = analogRead(CURRENT_SENSE_PIN);
   int mA  = (int)(adc * CURRENT_MA_PER_CNT + 0.5f);
   st.overcurrent = (mA > MAX_CURRENT_MA);
 
-  if (st.e_stop){ Serial.println(F("ERROR: E-STOP")); return false; }
-  if (st.overcurrent){ Serial.print(F("ERROR: Overcurrent mA=")); Serial.println(mA); return false; }
-
-  if (enforceWatchdog && !IDE_MODE){
-    if (millis() - st.last_heartbeat_ms > WATCHDOG_MS){
-      Serial.println(F("ERROR: Watchdog timeout"));
-      return false;
-    }
+  if (st.e_stop) {
+    Serial.println(F("ERROR: E-STOP"));
+    return false;
+  }
+  if (st.overcurrent) {
+    Serial.print(F("ERROR: Overcurrent mA=")); Serial.println(mA);
+    return false;
   }
   return true;
 }
 
-inline bool wired(const CornerPins& p){ return p.dir && p.step; }
-
-inline void setDir(const CornerPins& p, long steps){
-  digitalWrite(p.dir, (steps>0) ? HIGH : LOW);
-}
-inline void pulse(const CornerPins& p){
-  digitalWrite(p.step, HIGH);
-  delayMicroseconds(2);
-  digitalWrite(p.step, LOW);             // falling edge = step
-  delayMicroseconds(mp.pulse_us);
-  digitalWrite(p.step, HIGH);            // idle HIGH
-}
-
 void moveCorner(const CornerPins& p, char name, long steps, long& pos){
-  if (!wired(p)){ Serial.print(F("ERROR: Corner ")); Serial.print(name); Serial.println(F(" not wired")); return; }
-  if (!st.enabled){ Serial.println(F("ERROR: System not enabled")); return; }
-  if (steps==0) return;
+  if (steps == 0) return;
+  if (!checkSafety()) return;
 
   long target = pos + steps;
   st.moving = true;
   setDir(p, steps);
 
-  // take-up
-  for (uint8_t i=0;i<mp.takeup;i++){
-    if (!checkSafety()) { st.moving=false; return; }
-    pulse(p); heartbeat(); delay(mp.gap_ms);
+  // Take-up steps to overcome stiction/backlash
+  for (uint8_t i=0; i<mp.takeup; ++i) {
+    if (!checkSafety()) { st.moving = false; return; }
+    pulseStep(p); heartbeat(); delay(mp.gap_ms);
   }
-  // main
-  for (long i=0, n=labs(steps); i<n; ++i){
-    if (!checkSafety()) { st.moving=false; return; }
-    pulse(p); heartbeat(); delay(mp.gap_ms);
+  // Main motion
+  for (long i=0, n=labs(steps); i<n; ++i) {
+    if (!checkSafety()) { st.moving = false; return; }
+    pulseStep(p); heartbeat(); delay(mp.gap_ms);
   }
+
   delay(mp.settle_ms);
   pos = target;
   st.moving = false;
 }
 
+// ---------------- UI / Commands ----------------------------------------
 void printHelp(){
-  Serial.println(F("=== 8812 Dual-Mount Corner Controller ==="));
-  Serial.println(F("SELECT A | SELECT B      (choose Pico A or Pico B)"));
-  Serial.println(F("ENABLE / DISABLE / STOP / ZERO"));
-  Serial.println(F("MOVE A <steps> | MOVE B <steps> | MOVE C <steps>"));
-  Serial.println(F("POSITION | STATUS | SAFETY"));
-  Serial.println(F("SET_TIMING <pulse_us> <gap_ms> <takeup> <settle_ms>"));
-  Serial.println(F("Notes: Corner not wired -> ERROR. TIP/TILT should be done in app via A/B/C combos."));
+  Serial.println(F("=== 8801 Picomotor Controller (A/B/C) ==="));
+  Serial.println(F("Commands:"));
+  Serial.println(F("  MOVE A <steps> | MOVE B <steps> | MOVE C <steps>   (steps can be +/-)"));
+  Serial.println(F("  ZERO     (reset positions to 0)"));
+  Serial.println(F("  POSITION (report positions)"));
+  Serial.println(F("  STATUS   (basic status)"));
+  Serial.println(F("  SAFETY   (report e-stop/overcurrent)"));
+  Serial.println(F("  SET_TIMING <pulse_us> <gap_ms> <takeup> <settle_ms>"));
+  Serial.println(F("  PING     (responds PONG)"));
+  Serial.println(F("  HELP"));
+  Serial.println(F("Notes: negative-edge stepping; share GND; do NOT tie 8801 +5V to Arduino 5V."));
 }
 
 void handleCommand(String line){
@@ -134,105 +171,115 @@ void handleCommand(String line){
   String cmd = (sp1==-1)? line : line.substring(0, sp1);
   cmd.toUpperCase();
 
-  if (cmd==F("SELECT")){
-    String which = line.substring(sp1+1); which.trim(); which.toUpperCase();
-    if (which=="A"){ ACTIVE=&DRIVER_A; ACTIVE_NAME='A'; Serial.println(F("OK")); }
-    else if (which=="B"){ ACTIVE=&DRIVER_B; ACTIVE_NAME='B'; Serial.println(F("OK")); }
-    else { Serial.println(F("ERROR: SELECT needs A or B")); }
-    heartbeat(); return;
-  }
+  if (cmd == F("PING")) { Serial.println(F("PONG")); heartbeat(); return; }
+  if (cmd == F("HELP")) { printHelp(); return; }
 
-  if (cmd==F("ENABLE"))  { if (checkSafety(false)){ st.enabled=true; Serial.println(F("OK")); heartbeat(); } else Serial.println(F("ERROR")); return; }
-  if (cmd==F("DISABLE")) { st.enabled=false; st.moving=false; Serial.println(F("OK")); heartbeat(); return; }
-  if (cmd==F("STOP"))    { st.enabled=false; st.moving=false; digitalWrite(TRIGGER_OUT_PIN,LOW); Serial.println(F("OK")); return; }
-  if (cmd==F("ZERO"))    { st.a_pos=st.b_pos=st.c_pos=0; Serial.println(F("OK")); heartbeat(); return; }
-
-  if (cmd==F("POSITION")){
-    Serial.print(F("POS A=")); Serial.print(st.a_pos);
-    Serial.print(F(" B=")); Serial.print(st.b_pos);
-    Serial.print(F(" C=")); Serial.println(st.c_pos);
+  if (cmd == F("ZERO")){
+    st.posA = st.posB = st.posC = 0;
+    Serial.println(F("OK"));
+    heartbeat();
     return;
   }
-  if (cmd==F("STATUS")){
-    Serial.print(F("STATUS PICO=")); Serial.print(ACTIVE_NAME);
-    Serial.print(F(" ENABLED=")); Serial.print(st.enabled?1:0);
-    Serial.print(F(" MOVING="));  Serial.print(st.moving?1:0);
-    Serial.print(F(" A=")); Serial.print(st.a_pos);
-    Serial.print(F(" B=")); Serial.print(st.b_pos);
-    Serial.print(F(" C=")); Serial.println(st.c_pos);
+
+  if (cmd == F("POSITION")){
+    Serial.print(F("POS A=")); Serial.print(st.posA);
+    Serial.print(F(" B="));    Serial.print(st.posB);
+    Serial.print(F(" C="));    Serial.println(st.posC);
     return;
   }
-  if (cmd==F("SAFETY")){
-    checkSafety(false);
+
+  if (cmd == F("STATUS")){
+    Serial.print(F("STATUS MOVING=")); Serial.print(st.moving?1:0);
+    Serial.print(F(" A=")); Serial.print(st.posA);
+    Serial.print(F(" B=")); Serial.print(st.posB);
+    Serial.print(F(" C=")); Serial.println(st.posC);
+    return;
+  }
+
+  if (cmd == F("SAFETY")){
+    checkSafety();
     Serial.print(F("SAFETY E="));  Serial.print(st.e_stop?1:0);
     Serial.print(F(" OC="));       Serial.println(st.overcurrent?1:0);
     return;
   }
 
-  if (cmd==F("SET_TIMING")){
+  if (cmd == F("SET_TIMING")){
     long v[4]={0,0,0,0}; int cnt=0, start=sp1+1;
     for (int i=start;i<=line.length() && cnt<4;i++){
-      if (i==line.length() || line[i]==' '){ v[cnt++]=line.substring(start,i).toInt(); start=i+1; }
+      if (i==line.length() || line[i]==' '){
+        String tok = line.substring(start,i); tok.trim();
+        if (tok.length()) v[cnt++] = tok.toInt();
+        start = i+1;
+      }
     }
-    if (cnt==4){ mp.pulse_us=max(50L,v[0]); mp.gap_ms=max(0L,v[1]); mp.takeup=(uint8_t)max(0L,v[2]); mp.settle_ms=max(0L,v[3]); Serial.println(F("OK")); heartbeat(); }
-    else Serial.println(F("ERROR: SET_TIMING needs 4 ints"));
+    if (cnt==4){
+      mp.pulse_low_us = (unsigned int)max(50L, v[0]);  // keep >= ~50 µs for reliability
+      mp.gap_ms       = (unsigned int)max(0L,  v[1]);
+      mp.takeup       = (uint8_t)max(0L,       v[2]);
+      mp.settle_ms    = (unsigned int)max(0L,  v[3]);
+      Serial.println(F("OK"));
+      heartbeat();
+    } else {
+      Serial.println(F("ERROR: SET_TIMING needs 4 ints"));
+    }
     return;
   }
 
-  if (cmd==F("MOVE")){
-    if(!st.enabled){ Serial.println(F("ERROR: System not enabled")); return; }
-    int sp2=line.indexOf(' ', sp1+1); if(sp2==-1){ Serial.println(F("ERROR: MOVE syntax")); return; }
-    String which = line.substring(sp1+1, sp2); which.toUpperCase();
+  if (cmd == F("MOVE")){
+    int sp2 = line.indexOf(' ', sp1+1); if (sp2==-1){ Serial.println(F("ERROR: MOVE syntax")); return; }
+    String which = line.substring(sp1+1, sp2); which.trim(); which.toUpperCase();
     long steps = line.substring(sp2+1).toInt();
 
-    if (which==F("A")) { moveCorner(ACTIVE->A, 'A', steps, st.a_pos); if(!st.moving) Serial.println(F("OK")); return; }
-    if (which==F("B")) { moveCorner(ACTIVE->B, 'B', steps, st.b_pos); if(!st.moving) Serial.println(F("OK")); return; }
-    if (which==F("C")) { moveCorner(ACTIVE->C, 'C', steps, st.c_pos); if(!st.moving) Serial.println(F("OK")); return; }
+    if (which == F("A")) { moveCorner(CORNER_A, 'A', steps, st.posA); if(!st.moving) Serial.println(F("OK")); return; }
+    if (which == F("B")) { moveCorner(CORNER_B, 'B', steps, st.posB); if(!st.moving) Serial.println(F("OK")); return; }
+    if (which == F("C")) { moveCorner(CORNER_C, 'C', steps, st.posC); if(!st.moving) Serial.println(F("OK")); return; }
 
     Serial.println(F("ERROR: MOVE expects A, B, or C"));
     return;
   }
 
-  if (cmd==F("HELP")) { printHelp(); return; }
+  if (cmd == F("STOP")){
+    st.moving = false;
+    digitalWrite(TRIGGER_OUT_PIN, LOW);
+    Serial.println(F("OK"));
+    return;
+  }
 
   Serial.println(F("ERROR: Unknown command"));
 }
 
+// ---------------- Setup / Loop -----------------------------------------
 void setup(){
-  // Configure outputs for all possible motor pins
-  const uint8_t OUTS[] = {
-    DRIVER_A.A.dir, DRIVER_A.A.step, DRIVER_A.B.dir, DRIVER_A.B.step, DRIVER_A.C.dir, DRIVER_A.C.step,
-    DRIVER_B.A.dir, DRIVER_B.A.step, DRIVER_B.B.dir, DRIVER_B.B.step, DRIVER_B.C.dir, DRIVER_B.C.step,
-    TRIGGER_OUT_PIN, LED_PIN
-  };
-  for (uint8_t i=0;i<sizeof(OUTS)/sizeof(OUTS[0]); ++i){
-    if (OUTS[i]) pinMode(OUTS[i], OUTPUT);
-  }
+  // Configure outputs
+  pinMode(DIR_A, OUTPUT);  pinMode(STEP_A, OUTPUT);
+  pinMode(DIR_B, OUTPUT);  pinMode(STEP_B, OUTPUT);
+  pinMode(DIR_C, OUTPUT);  pinMode(STEP_C, OUTPUT);
 
-  // Idle states: DIR LOW, STEP HIGH
-  auto idle = [](const CornerPins& p){ if(p.dir) digitalWrite(p.dir,LOW); if(p.step) digitalWrite(p.step,HIGH); };
-  idle(DRIVER_A.A); idle(DRIVER_A.B); idle(DRIVER_A.C);
-  idle(DRIVER_B.A); idle(DRIVER_B.B); idle(DRIVER_B.C);
+  // Idle states (negative-edge stepping): DIR LOW, STEP HIGH
+  idleHigh(CORNER_A);
+  idleHigh(CORNER_B);
+  idleHigh(CORNER_C);
 
   pinMode(EMERGENCY_STOP_PIN, INPUT_PULLUP);
-  pinMode(LED_PIN, OUTPUT); digitalWrite(LED_PIN, LOW);
-  pinMode(TRIGGER_OUT_PIN, OUTPUT); digitalWrite(TRIGGER_OUT_PIN, LOW);
+  pinMode(LED_PIN, OUTPUT);          digitalWrite(LED_PIN, LOW);
+  pinMode(TRIGGER_OUT_PIN, OUTPUT);  digitalWrite(TRIGGER_OUT_PIN, LOW);
+  if (CLK_8801 >= 0) pinMode(CLK_8801, INPUT); // optional
 
   Serial.begin(9600);
   while(!Serial){;}
   st.last_heartbeat_ms = millis();
 
   Serial.println(F("READY"));
-  Serial.println(F("8812 Dual-Mount Corner Controller v3.3"));
+  Serial.println(F("8801 Picomotor Controller v1.1 (no ENABLE required)"));
   Serial.println(F("Type HELP for commands"));
-  Serial.println(F("Active Pico: A"));
 }
 
 void loop(){
-  digitalWrite(LED_PIN, (st.enabled && !st.e_stop) ? HIGH : LOW);
+  // Status LED on when not e-stop and not moving
+  digitalWrite(LED_PIN, (!st.e_stop && !st.moving) ? HIGH : LOW);
 
-  if (Serial.available()>0){
-    String line = Serial.readStringUntil('\n'); line.trim();
+  if (Serial.available() > 0){
+    String line = Serial.readStringUntil('\n');
     if (line.length()) handleCommand(line);
   }
 

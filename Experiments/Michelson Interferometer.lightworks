@@ -4,9 +4,9 @@
   "meta": {
     "app": "LightWorks",
     "createdAt": 1758136336160,
-    "modifiedAt": 1760577166166,
+    "modifiedAt": 1760660320878,
     "author": "user",
-    "checksum": "309160bb"
+    "checksum": "501aeb50"
   },
   "table": {
     "id": "2d70c9ee-41d3-4714-ac7a-ac20a9a19121",
@@ -38,55 +38,21 @@
   },
   "components": [
     {
-      "type": "laser.generic",
-      "label": "laser",
+      "type": "motor.jankomotor.8812",
+      "label": "8812",
       "pose": {
-        "x": 75,
-        "y": 100,
-        "theta": 90
-      },
-      "holePose": {
-        "i": 3,
-        "j": 4,
-        "theta": 90
-      },
-      "locked": true,
-      "meta": {},
-      "id": "2748b505-259c-4465-bde2-ce35b9f6eb53"
-    },
-    {
-      "type": "mirror.generic",
-      "label": "generic",
-      "pose": {
-        "x": 150,
-        "y": 100,
-        "theta": -125
-      },
-      "holePose": {
-        "i": 6,
-        "j": 4,
-        "theta": -125
-      },
-      "locked": true,
-      "meta": {},
-      "id": "1df77e70-81cb-49fa-ba4f-6a5a7859ef98"
-    },
-    {
-      "type": "motor.thorlabs.kdc101",
-      "label": "kdc101",
-      "pose": {
-        "x": 250,
-        "y": 500,
+        "x": 100,
+        "y": 125,
         "theta": 0
       },
       "holePose": {
-        "i": 10,
-        "j": 20,
+        "i": 4,
+        "j": 5,
         "theta": 0
       },
       "locked": false,
       "meta": {},
-      "id": "2bf56130-1fde-4f50-89a2-e0cdb6d10870"
+      "id": "05558278-5cf1-46a2-867a-dfedb586b806"
     }
   ],
   "connections": [],

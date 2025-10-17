@@ -1,152 +1,233 @@
-# LightWorks Hardware Control
+# LightWorks Hardware Components
 
-This directory contains hardware control scripts, commands, and documentation for all devices supported by LightWorks. The system is designed to be modular and extensible, allowing easy addition of new hardware devices.
+This directory contains all hardware device components for LightWorks, organized by device type and following a consistent structure.
 
 ## Architecture
 
-LightWorks uses a **dynamic device registry system** that automatically loads device configurations from the hardware folders. This means:
+LightWorks uses a **capability-driven architecture** where:
 
-- ✅ **Easy to add new hardware** - Just create a folder with a `device-config.json` file
-- ✅ **Self-contained devices** - Each device has its own scripts, docs, and configuration
-- ✅ **No code changes needed** - New devices appear automatically in the UI
-- ✅ **Modular design** - Each device is independent and can be developed separately
+- **Single device package per hardware family** (e.g., `DMK37/` for cameras)
+- **Cross-platform support** with automatic driver selection
+- **Capability detection** that adapts UI based on platform features
+- **Graceful degradation** when advanced features aren't available
 
-## Folder Structure
+## Device Structure
 
-Each hardware device has its own subdirectory containing:
+Each device follows this standard structure:
 
 ```
-hardware/
-├── README.md                    # This file
-├── example_usage.py             # Example usage script
-├── device-template/             # Template for new devices
-│   ├── device-config.json       # Device configuration template
-│   └── README.md                # Template documentation
-└── DeviceName/                  # Individual device folders
-    ├── device-config.json       # Device configuration (REQUIRED)
-    ├── README.md                # Device documentation
-    ├── commands/
-    │   └── command_reference.md # Command documentation
-    ├── documentation/
-    │   └── specifications.md    # Technical specifications
-    ├── drivers/                 # Device drivers and software
-    └── scripts/
-        ├── device_control.py    # Control library
-        └── demo_script.py       # Example usage
+DeviceName/
+├── README.md              # Device overview and usage
+├── device-config.json     # Device configuration and capabilities
+├── QUICK_START.md         # Quick start guide
+├── CHANGELOG.md           # Version history
+├── scripts/               # Python controller scripts
+│   ├── __init__.py
+│   ├── device_controller.py
+│   ├── capabilities.py
+│   └── example.py
+└── documentation/         # Additional documentation
+    ├── API.md
+    └── TROUBLESHOOTING.md
 ```
 
-## Supported Hardware
+## Available Devices
 
-### Motion Control
-- **Picomotor 8812** - Newport precision motor controller
-- **Thorlabs KDC101** - Thorlabs motor controller
-- **Newport ESP Stage** - Newport precision stage
+### Cameras
+- **DMK37** - The Imaging Source DMK 37BUX252 scientific camera
+  - Cross-platform support (Windows IC Imaging Control, Linux V4L2, macOS UVC)
+  - Capability-driven UI that adapts to platform limitations
+  - Full feature set on Windows, good features on Linux, basic on macOS
 
-### Detection
-- **Andor Camera** - Scientific imaging camera
-- **Generic Sensor** - Various sensor types
+### Motors
+- **Jankomotor8812** - Newport Picomotor 8812 precision motor controller
+  - Arduino-based control with STEP/DIR interface
+  - Corner actuator and tip/tilt control
+  - Serial communication with safety features
 
-### Analysis
-- **Andor SR-750** - Spectrograph
+### Template
+- **device-template** - Template for creating new devices
+  - Complete example implementation
+  - Cross-platform capability system
+  - Documentation and testing framework
 
-### Optics
-- **Generic Laser** - Laser sources
-- **Generic Mirror** - Beam steering mirrors
-- **Generic Beam Splitter** - Power division optics
+## Capability System
 
-## Adding New Hardware
+### Platform Capabilities
 
-### Quick Start
+| Feature | Windows | Linux | macOS |
+|---------|---------|-------|-------|
+| Native Drivers | ✅ | ✅ | ❌ |
+| Advanced Control | ✅ | Partial | ❌ |
+| Hardware Triggering | ✅ | ✅ | ❌ |
+| ROI Control | ✅ | ✅ | ❌ |
+| 12-bit Imaging | ✅ | ❌ | ❌ |
 
-1. **Copy the template**:
-   ```bash
-   cp -r hardware/device-template/ hardware/YourDeviceName/
-   ```
+### Capability Detection
 
-2. **Edit the configuration**:
-   - Modify `hardware/YourDeviceName/device-config.json`
-   - Set the device type, name, commands, etc.
+Devices automatically detect platform capabilities and adapt accordingly:
 
-3. **Create control scripts**:
-   - Implement the control library in `scripts/`
-   - Add any necessary drivers
+```python
+# Check if feature is supported
+if device.is_feature_supported('roi'):
+    device.set_roi(100, 100, 800, 600)
+else:
+    print("ROI not supported on this platform")
+```
 
-4. **Test the integration**:
-   - The device will automatically appear in LightWorks
-   - No code changes needed!
+### UI Adaptation
 
-### Detailed Steps
+The UI automatically adapts based on device capabilities:
 
-1. **Create Device Folder**: `hardware/YourDeviceName/`
-2. **Configure Device**: Edit `device-config.json` (see template)
-3. **Implement Control**: Create Python control scripts
-4. **Add Documentation**: Write README and specifications
-5. **Test Integration**: Verify device appears in LightWorks UI
+- **Disabled controls** for unsupported features
+- **Tooltips** explaining limitations
+- **Capability banners** showing what's limited and why
+- **Graceful degradation** with clear user feedback
 
-### Device Configuration
+## Adding New Devices
 
-The `device-config.json` file defines how your device appears in LightWorks:
+### 1. Copy Template
+```bash
+cp -r device-template/ my-new-device/
+cd my-new-device/
+```
 
-```json
-{
-  "type": "device.manufacturer.model",
-  "label": "Device Name",
-  "icon": "🔧",
-  "color": "bg-blue-500",
-  "category": "motion",
-  "description": "Brief description",
-  "size": { "width": 2, "height": 1 },
-  "commands": [...],
-  "telemetry": [...],
-  "properties": [...],
-  "driver": {...}
+### 2. Update Configuration
+Edit `device-config.json`:
+- Change device type and metadata
+- Define commands and telemetry
+- Set platform capabilities
+- Configure driver information
+
+### 3. Implement Controller
+Edit `scripts/device_controller.py`:
+- Add device-specific methods
+- Implement platform-specific drivers
+- Add capability detection
+- Handle errors gracefully
+
+### 4. Test and Document
+- Run example scripts
+- Test on all platforms
+- Update documentation
+- Add to device registry
+
+## Platform-Specific Notes
+
+### Windows
+- **Best performance** with native drivers
+- **Full feature set** available
+- **IC Imaging Control** for cameras
+- **DirectShow** for video devices
+- **Fallback to UVC** when native drivers unavailable
+
+### Linux
+- **Good performance** with V4L2/USB
+- **Most features** available
+- **V4L2** for video devices
+- **libusb** for USB devices
+- **Fallback to UVC** when V4L2 unavailable
+
+### macOS
+- **Limited features** with UVC/AVFoundation
+- **Basic functionality** only
+- **UVC** for most devices
+- **AVFoundation** for cameras
+- **No native drivers** for scientific devices
+
+## Device Registry
+
+Devices are registered in `hardware/deviceRegistry.ts`:
+
+```typescript
+// Add to deviceFolders array
+deviceFolders = [
+  'GenericLaser',
+  'GenericMirror',
+  'Jankomotor8812',
+  'DMK37',
+  'MyNewDevice'  // Add your device here
+]
+
+// Add device configuration
+'MyNewDevice': {
+  type: 'device.mynewdevice',
+  label: 'My New Device',
+  // ... configuration
 }
 ```
 
-See `device-template/README.md` for detailed configuration options.
+## Best Practices
 
-## Usage
+### Device Development
+1. **Start with capabilities** - Define what works where first
+2. **Graceful degradation** - Handle missing features gracefully
+3. **Clear error messages** - Use descriptive error messages
+4. **Comprehensive testing** - Test on all target platforms
+5. **Documentation** - Keep documentation up to date
 
-### In LightWorks Application
+### UI Integration
+1. **Capability-driven** - Use capability detection for UI
+2. **Clear feedback** - Show users what's limited and why
+3. **Consistent patterns** - Follow established UI patterns
+4. **Accessibility** - Ensure controls are accessible
 
-Hardware control is integrated through the device inspector panel:
+### Error Handling
+1. **Specific exceptions** - Use appropriate exception types
+2. **User-friendly messages** - Provide clear error messages
+3. **Recovery options** - Offer ways to recover from errors
+4. **Logging** - Log errors for debugging
 
-1. **Add Device**: Drag from device palette to optical bench
-2. **Configure**: Set connection parameters in device inspector
-3. **Control**: Use commands in the device inspector panel
-4. **Monitor**: View telemetry data in real-time
-5. **Automate**: Include in workflows for automated experiments
+## Troubleshooting
 
-### Direct Hardware Control
+### Common Issues
 
-For direct hardware control, use the scripts in each device's `scripts/` directory:
+#### Device Not Detected
+- Check USB connection
+- Verify driver installation
+- Check device permissions
+- Try different USB port
 
-```python
-from Picomotor_8812.scripts.picomotor_control import PicomotorController
+#### Connection Failed
+- Ensure device not used by another application
+- Check connection parameters
+- Verify device is powered on
+- Check driver installation
 
-controller = PicomotorController('/dev/ttyUSB0')
-controller.connect()
-controller.enable()
-controller.move_absolute(1000)
-controller.disconnect()
-```
+#### Limited Features
+- Check platform capabilities
+- Verify driver installation
+- Use fallback implementations
+- Check device compatibility
 
-## Development
+### Platform-Specific Issues
 
-### For Device Developers
+#### Windows
+- Install native drivers (IC Imaging Control, etc.)
+- Check device manager for conflicts
+- Run as administrator if needed
 
-- Use the `device-template/` as a starting point
-- Follow the folder structure conventions
-- Include comprehensive documentation
-- Test thoroughly before sharing
+#### Linux
+- Install V4L2 utilities: `sudo apt-get install v4l-utils`
+- Check device permissions: `ls -la /dev/video*`
+- Install required libraries
 
-### For LightWorks Developers
+#### macOS
+- Check UVC compatibility
+- Verify camera permissions
+- Use compatible devices
 
-- The device registry automatically loads all devices
-- Use `deviceRegistry.getDeviceConfig(type)` to get device info
-- Device types are dynamically discovered
-- No hardcoded device lists needed
+## Support
 
-## Examples
+- **Documentation**: Check device-specific README files
+- **Examples**: Run example scripts for guidance
+- **Testing**: Test on all target platforms
+- **Issues**: Report problems in project repository
 
-See the `Picomotor_8812/` folder for a complete example of a hardware device implementation.
+## Contributing
+
+1. **Follow structure** - Use the device template as a guide
+2. **Test thoroughly** - Test on all target platforms
+3. **Document completely** - Update all documentation
+4. **Follow patterns** - Use established patterns and conventions
+5. **Submit PRs** - Submit pull requests for review

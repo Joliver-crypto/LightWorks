@@ -416,9 +416,16 @@ export class FileOperations {
   }
 
   // Create a new table
-  async createTable(name: string, folder: 'experiments' | 'community' = 'experiments'): Promise<LightWorksFile> {
+  async createTable(name: string, folder: 'experiments' | 'community' = 'experiments', gridConfig?: { nx: number; ny: number }): Promise<LightWorksFile> {
     const tableId = crypto.randomUUID()
     const now = Date.now()
+    
+    // Calculate table dimensions based on grid
+    const pitch = 25 // Standard optical table pitch
+    const nx = gridConfig?.nx || 36
+    const ny = gridConfig?.ny || 24
+    const width = (nx - 1) * pitch
+    const height = (ny - 1) * pitch
     
     const table: LightWorksFile = {
       format: 'lightworks',
@@ -434,14 +441,14 @@ export class FileOperations {
         name,
         units: 'mm',
         angleUnits: 'deg',
-        width: 900,
-        height: 600,
+        width,
+        height,
         grid: {
-          pitch: 25,
+          pitch,
           thread: '1/4-20',
           origin: { x: 0, y: 0 },
-          nx: 36,
-          ny: 24,
+          nx,
+          ny,
           snapToHoles: true
         },
         view: {

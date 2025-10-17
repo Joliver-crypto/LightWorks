@@ -45,7 +45,8 @@ export const Dashboard = () => {
     experiments, 
     isLoading: storeLoading, 
     loadTable,
-    listTables
+    listTables,
+    createTable
   } = useFileStore()
 
   useEffect(() => {
@@ -114,18 +115,9 @@ export const Dashboard = () => {
     
     try {
       const name = newExperimentName.trim()
-      const config = {
-        rows: tableRows,
-        cols: tableCols,
-        holePitchMm: 25,
-        devices: []
-      }
-
-      if (!window.api) {
-        throw new Error('window.api is not available. Make sure the preload script is loaded correctly.');
-      }
-
-      const { filePath } = await window.api.createExperiment(name, config)
+      
+      // Create table using the proper file store system with grid configuration
+      await createTable(name, 'experiments', { nx: tableCols, ny: tableRows })
       
       setShowCreateModal(false)
       setNewExperimentName('')
@@ -134,7 +126,7 @@ export const Dashboard = () => {
       setValidationErrors({})
       
       // Navigate to editor with the new table
-      navigate(`/editor?file=${encodeURIComponent(filePath)}`)
+      navigate(`/editor?tableId=${encodeURIComponent(experiments[experiments.length - 1]?.id || '')}`)
     } catch (error) {
       console.error('Failed to create table:', error)
     }

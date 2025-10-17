@@ -9,6 +9,7 @@ import { SelectionLayer } from './SelectionLayer'
 import { createShortcutHandler, SHORTCUTS } from '../../utils/shortcuts'
 import { snapToHole, gridToGridConfig } from '../../utils/grid'
 import { ComponentType } from '../../models/fileFormat'
+import { deviceRegistry } from '../../../hardware/deviceRegistry'
 
 export function BenchCanvas() {
   const stageRef = useRef<any>(null)
@@ -211,12 +212,16 @@ export function BenchCanvas() {
         
         // Create new component with snapped position
         if (currentTable) {
+          // Always create new devices with 1x1 size (building block starts small)
+          const deviceSize = { width: 1, height: 1 };
+          
           const newComponent = {
             type: data.deviceType as ComponentType,
             label: data.deviceType.split('.').pop() || 'Device',
             pose: { x: snapped.x, y: snapped.y, theta: 0 },
             holePose: { i: Math.round(snapped.x / 25), j: Math.round(snapped.y / 25), theta: 0 },
             locked: false,
+            size: deviceSize,
             meta: {}
           }
           

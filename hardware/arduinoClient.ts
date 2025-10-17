@@ -173,6 +173,3 @@ export async function connectToArduino(): Promise<boolean> {
 export async function disconnectFromArduino(): Promise<void> {
   await arduinoClient.disconnect()
 }
-
-
-

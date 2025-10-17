@@ -1,57 +1,159 @@
 {
-  "type": "device.manufacturer.model",
-  "label": "Device Name",
-  "icon": "🔧",
-  "color": "bg-blue-500",
+  "type": "device.template",
+  "label": "Template Device",
+  "icon": "⚙️",
+  "color": "bg-gray-500",
   "category": "motion",
-  "description": "Brief description of the device",
+  "description": "Template device for creating new hardware components",
   "size": {
     "width": 2,
     "height": 1
   },
   "commands": [
     {
-      "name": "command_name",
-      "label": "Command Label",
-      "description": "What this command does",
+      "name": "connect",
+      "label": "Connect",
+      "description": "Connect to device",
       "args": [
         {
-          "name": "parameter_name",
-          "type": "number",
-          "required": true,
-          "default": 0
+          "name": "identifier",
+          "type": "string",
+          "required": false,
+          "default": ""
         }
       ]
+    },
+    {
+      "name": "disconnect",
+      "label": "Disconnect",
+      "description": "Disconnect from device",
+      "args": []
+    },
+    {
+      "name": "initialize",
+      "label": "Initialize",
+      "description": "Initialize device",
+      "args": []
+    },
+    {
+      "name": "reset",
+      "label": "Reset",
+      "description": "Reset device to default state",
+      "args": []
+    },
+    {
+      "name": "get_status",
+      "label": "Get Status",
+      "description": "Get device status",
+      "args": []
     }
   ],
   "telemetry": [
     {
-      "name": "telemetry_name",
-      "label": "Telemetry Label",
-      "unit": "unit",
+      "name": "status",
+      "label": "Status",
+      "type": "string"
+    },
+    {
+      "name": "temperature",
+      "label": "Temperature",
+      "unit": "°C",
+      "type": "number"
+    },
+    {
+      "name": "voltage",
+      "label": "Voltage",
+      "unit": "V",
+      "type": "number"
+    },
+    {
+      "name": "current",
+      "label": "Current",
+      "unit": "A",
       "type": "number"
     }
   ],
   "properties": [
     {
-      "name": "property_name",
-      "label": "Property Label",
+      "name": "enabled",
+      "label": "Enabled",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "name": "mode",
+      "label": "Mode",
+      "type": "select",
+      "default": "normal",
+      "options": ["normal", "high_performance", "low_power"]
+    },
+    {
+      "name": "timeout",
+      "label": "Timeout",
       "type": "number",
-      "default": 0
+      "default": 5.0
     }
   ],
   "driver": {
-    "module": "DeviceFolder.scripts.control_module",
-    "class": "DeviceController",
+    "module": "device-template.scripts.template_controller",
+    "class": "TemplateController",
     "connection": {
-      "type": "serial",
+      "type": "usb",
       "port": "auto",
-      "baudrate": 9600,
       "timeout": 1.0
+    }
+  },
+  "capabilities": {
+    "windows": {
+      "os": "Windows",
+      "transport": "Native Driver",
+      "features": {
+        "basicControl": true,
+        "advancedControl": true,
+        "monitoring": true,
+        "configuration": true,
+        "calibration": true
+      },
+      "limits": {
+        "maxValue": 100,
+        "minValue": 0,
+        "maxFrequency": 1000,
+        "minFrequency": 1
+      }
+    },
+    "linux": {
+      "os": "Linux",
+      "transport": "V4L2/USB",
+      "features": {
+        "basicControl": true,
+        "advancedControl": false,
+        "monitoring": true,
+        "configuration": false,
+        "calibration": false
+      },
+      "limits": {
+        "maxValue": 50,
+        "minValue": 0,
+        "maxFrequency": 500,
+        "minFrequency": 1
+      }
+    },
+    "macos": {
+      "os": "macOS",
+      "transport": "UVC/AVFoundation",
+      "features": {
+        "basicControl": true,
+        "advancedControl": false,
+        "monitoring": false,
+        "configuration": false,
+        "calibration": false
+      },
+      "limits": {
+        "maxValue": 25,
+        "minValue": 0,
+        "maxFrequency": 100,
+        "minFrequency": 1
+      }
     }
   }
 }
-
-
-
-

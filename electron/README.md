@@ -55,3 +55,4 @@ The app uses Electron's context isolation and preload scripts for security:
 
 
 
+

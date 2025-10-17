@@ -1,8 +1,9 @@
-import React, { memo, useCallback } from "react";
-import { Group, Rect, Text, Circle } from "react-konva";
+import React, { memo, useCallback, useState } from "react";
+import { Group, Rect, Text } from "react-konva";
 import { Component } from '../../models/fileFormat'
 import { snapToHole } from '../../utils/grid'
 import { KonvaEventObject } from "konva/lib/Node";
+import { deviceRegistry } from '../../../hardware/deviceRegistry'
 
 interface DeviceLayerProps {
   devices: Component[]
@@ -22,36 +23,80 @@ interface DeviceLayerProps {
   }
 }
 
-const DEVICE_SIZE = 36;
 const CORNER = 8;
-const DOT_SIZE = 6;
 
-// Determine if device is an input device (like laser) or output device (like detector)
-function isInputDevice(deviceType: string): boolean {
-  return deviceType.includes('laser') || deviceType.includes('source');
+// Professional icons to replace emojis (same as in Palette)
+const PROFESSIONAL_ICONS: Record<string, string> = {
+  '🔴': '●', // Laser
+  '🪞': '◢', // Mirror
+  '🔀': '◤', // Splitter
+  '◤': '◤', // Polarizer (already professional)
+  '📷': '◉', // Camera
+  '⚙️': '⚙', // Motor
+  '🔧': '⚙', // Jankomotor
+  '📐': '◢', // Stage
+  '📊': '◯', // Sensor
+  '🌈': '◯', // Spectrograph
 }
 
-// Determine if device is an output device (like detector, camera)
-function isOutputDevice(deviceType: string): boolean {
-  return deviceType.includes('camera') || deviceType.includes('detector') || 
-         deviceType.includes('sensor') || deviceType.includes('spectrograph');
+// Note: Direction color logic removed - now using black rectangle indicator
+
+// Get professional icon for device
+function getProfessionalIcon(deviceType: string): string {
+  const deviceConfig = deviceRegistry.getDeviceConfig(deviceType as any);
+  if (deviceConfig) {
+    return PROFESSIONAL_ICONS[deviceConfig.icon] || '◯';
+  }
+  return '◯'; // Default fallback
 }
 
-// Get device direction color based on type
-function getDirectionColor(deviceType: string): string {
-  if (isInputDevice(deviceType)) return "#ef4444"; // Red for input (lasers)
-  if (isOutputDevice(deviceType)) return "#22c55e"; // Green for output (detectors)
-  return "#3b82f6"; // Blue for other devices (mirrors, splitters)
+// Get device color from registry
+function getDeviceColor(deviceType: string): string {
+  const deviceConfig = deviceRegistry.getDeviceConfig(deviceType as any);
+  if (deviceConfig) {
+    return deviceConfig.color;
+  }
+  return '#6b7280'; // Default gray fallback
+}
+
+// Calculate device size based on properties
+function getDeviceSize(device: Component, gridPitch: number): { width: number; height: number } {
+  const size = device.size || { width: 1, height: 1 };
+  return {
+    width: size.width * gridPitch,  // Use grid pitch instead of DEVICE_SIZE
+    height: size.height * gridPitch  // Use grid pitch instead of DEVICE_SIZE
+  };
+}
+
+// Calculate device position so it grows from the original hole position
+function getDevicePosition(device: Component): { x: number; y: number } {
+  // The device position should be at the top-left corner of the multi-hole device
+  // This means the device grows down and to the right from the original hole position
+  return {
+    x: device.pose.x,
+    y: device.pose.y
+  };
 }
 
 export const DeviceLayer: React.FC<DeviceLayerProps> = memo(({ 
   devices, 
+  selectedIds,
   onDeviceSelect, 
   onDeviceMove, 
   onDeviceDragMove,
   onDeviceDragEnd,
   grid
 }) => {
+  const [draggingId, setDraggingId] = useState<string | null>(null)
+  /**
+   * Handles device drag start - sets visual feedback
+   * @param e - Konva drag event
+   * @param id - Device ID being dragged
+   */
+  const handleDragStart = useCallback((_e: KonvaEventObject<DragEvent>, id: string) => {
+    setDraggingId(id)
+  }, []);
+
   /**
    * Handles device drag movement for auto-panning
    * This is called continuously during drag operations
@@ -89,6 +134,12 @@ export const DeviceLayer: React.FC<DeviceLayerProps> = memo(({
       y: (pointer.y - stage.y()) / stage.scaleY()
     };
     
+    // Find the device to get its size
+    const device = devices.find(d => d.id === id);
+    if (!device) return;
+    
+    const deviceSize = device.size || { width: 1, height: 1 };
+    
     // Snap to the closest grid hole first
     let snapped = snapToHole(worldPos, grid);
     
@@ -109,11 +160,17 @@ export const DeviceLayer: React.FC<DeviceLayerProps> = memo(({
     const minWorldX = grid.origin.x;
     const minWorldY = grid.origin.y;
     
+    // Ensure the device doesn't extend beyond grid boundaries
+    // For multi-hole devices, we need to account for the device size
+    // The device grows from the snapped position (top-left corner)
+    const maxAllowedX = maxWorldX - (deviceSize.width - 1) * grid.pitch;
+    const maxAllowedY = maxWorldY - (deviceSize.height - 1) * grid.pitch;
+    
     // Clamp the snapped position to grid boundaries
     // This ensures devices can only be placed on valid grid holes
     snapped = {
-      x: Math.max(minWorldX, Math.min(maxWorldX, snapped.x)),
-      y: Math.max(minWorldY, Math.min(maxWorldY, snapped.y))
+      x: Math.max(minWorldX, Math.min(maxAllowedX, snapped.x)),
+      y: Math.max(minWorldY, Math.min(maxAllowedY, snapped.y))
     };
     
     // Update the device position in the store
@@ -124,67 +181,90 @@ export const DeviceLayer: React.FC<DeviceLayerProps> = memo(({
       theta: e.target.rotation() 
     });
 
+    // Clear dragging state
+    setDraggingId(null)
+
     // Notify parent that drag ended (for auto-panning cleanup)
     if (onDeviceDragEnd) {
       onDeviceDragEnd();
     }
-  }, [grid, onDeviceMove, onDeviceDragEnd]);
+  }, [grid, onDeviceMove, onDeviceDragEnd, devices]);
 
   return (
     <>
       {devices.map((d) => {
-        const directionColor = getDirectionColor(d.type);
+        const deviceColor = getDeviceColor(d.type);
+        const deviceSize = getDeviceSize(d, grid.pitch);
+        const devicePosition = getDevicePosition(d);
+        const isSelected = selectedIds.includes(d.id);
+        const isDragging = draggingId === d.id;
         
         return (
           <Group
             key={d.id}
-            // Position the device group at the device's center coordinates
-            // d.pose.x and d.pose.y are already the center coordinates
-            x={d.pose.x}
-            y={d.pose.y}
+            // Position the device group at the top-left corner of the multi-hole device
+            x={devicePosition.x}
+            y={devicePosition.y}
             rotation={d.pose.theta ?? 0}
-            // Offset the group so rotation happens around the center
-            offsetX={DEVICE_SIZE / 2}
-            offsetY={DEVICE_SIZE / 2}
+            // No offset needed since we're positioning at the corner
+            offsetX={0}
+            offsetY={0}
             // Only allow dragging if device is not locked
             draggable={!d.locked}
             onClick={() => onDeviceSelect(d.id)}
             onTap={() => onDeviceSelect(d.id)}
+            onDragStart={(e) => handleDragStart(e, d.id)}
             onDragMove={(e) => handleDragMove(e, d.id)}
             onDragEnd={(e) => handleDragEnd(e, d.id)}
             listening
           >
-            {/* Device body - visual representation */}
+            {/* Device body - colorful background like in hardware panel */}
             <Rect
-              width={DEVICE_SIZE}
-              height={DEVICE_SIZE}
+              width={deviceSize.width}
+              height={deviceSize.height}
               cornerRadius={CORNER}
-              fill="#0f172a"
-              stroke="#94a3b8"
-              strokeWidth={2}
-              shadowBlur={2}
-              shadowColor="black"
+              fill={isDragging ? deviceColor : deviceColor}
+              stroke={isSelected ? "#3b82f6" : isDragging ? "#60a5fa" : "#000000"}
+              strokeWidth={isSelected ? 3 : isDragging ? 2 : 1}
+              shadowBlur={isDragging ? 8 : 2}
+              shadowColor={isDragging ? "#3b82f6" : "black"}
+              shadowOffset={{ x: 0, y: isDragging ? 4 : 1 }}
+              shadowOpacity={isDragging ? 0.3 : 0.1}
             />
             
-            {/* Direction indicator - shows device orientation */}
-            <Circle
-              x={DEVICE_SIZE / 2 + DOT_SIZE / 2}  // Position at the right edge
-              y={0}                               // Center vertically
-              radius={DOT_SIZE / 2}
-              fill={directionColor}
-              stroke="white"
-              strokeWidth={1}
+            {/* Professional device icon - centered in the first hole */}
+            <Text
+              text={getProfessionalIcon(d.type)}
+              fontSize={16}
+              fill="white"
+              x={grid.pitch / 2}  // Center in first hole
+              y={grid.pitch / 2}  // Center in first hole
+              offsetX={8}
+              offsetY={8}
+              align="center"
+              listening={false}
+            />
+            
+            {/* Direction indicator - small rounded rectangle extending above device */}
+            <Rect
+              x={grid.pitch / 2 - 6}  // Center in first hole, adjusted for 12px width
+              y={-3}  // Position above the device edge
+              width={12}  // Longer width
+              height={6}  // Small height
+              fill="#000000"
+              cornerRadius={3}  // Fully rounded rectangle
               listening={false}  // Don't interfere with drag events
             />
             
-            {/* Device label - shows below the device */}
+            {/* Device label - centered below the device block */}
             <Text
               text={d.label || d.type}
               fontSize={12}
-              fill="#cbd5e1"
-              y={DEVICE_SIZE / 2 + 2}
-              offsetX={DEVICE_SIZE / 2}
-              width={DEVICE_SIZE * 2}        // Give some room for text
+              fill="#374151"
+              x={0}  // Start at the left edge of the device
+              y={deviceSize.height + 8}  // Position below the device
+              offsetX={deviceSize.width / 2}  // Center horizontally
+              width={deviceSize.width * 2}        // Give some room for text
               align="center"
               listening={false}  // Don't interfere with drag events
             />

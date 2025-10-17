@@ -18,7 +18,7 @@ interface FileState {
   // Actions
   loadTable: (tableId: string, folder?: 'experiments' | 'community') => Promise<void>
   saveTable: () => Promise<void>
-  createTable: (name: string, folder?: 'experiments' | 'community') => Promise<void>
+  createTable: (name: string, folder?: 'experiments' | 'community', gridConfig?: { nx: number; ny: number }) => Promise<void>
   deleteTable: (tableId: string, folder?: 'experiments' | 'community') => Promise<void>
   duplicateTable: (tableId: string, newName: string, folder?: 'experiments' | 'community') => Promise<void>
   listTables: (folder?: 'experiments' | 'community') => Promise<void>
@@ -93,10 +93,10 @@ export const useFileStore = create<FileState>()(
         }
       },
 
-      createTable: async (name: string, folder: 'experiments' | 'community' = 'experiments') => {
+      createTable: async (name: string, folder: 'experiments' | 'community' = 'experiments', gridConfig?: { nx: number; ny: number }) => {
         set({ isLoading: true, error: null })
         try {
-          const table = await fileOperations.createTable(name, folder)
+          const table = await fileOperations.createTable(name, folder, gridConfig)
           set({ 
             currentTable: table, 
             isDirty: false, 
@@ -356,6 +356,16 @@ export const useFileStore = create<FileState>()(
 
         const newGrid = { ...currentTable.table.grid, ...updates }
         
+        // Update table dimensions if nx or ny changed
+        let newWidth = currentTable.table.width
+        let newHeight = currentTable.table.height
+        
+        if (updates.nx !== undefined || updates.ny !== undefined) {
+          const pitch = newGrid.pitch
+          newWidth = (newGrid.nx || 36) * pitch - pitch // (nx - 1) * pitch
+          newHeight = (newGrid.ny || 24) * pitch - pitch // (ny - 1) * pitch
+        }
+        
         // Update component hole poses when grid changes
         const updatedComponents = currentTable.components.map(comp => ({
           ...comp,
@@ -366,6 +376,8 @@ export const useFileStore = create<FileState>()(
           ...currentTable,
           table: {
             ...currentTable.table,
+            width: newWidth,
+            height: newHeight,
             grid: newGrid
           },
           components: updatedComponents,

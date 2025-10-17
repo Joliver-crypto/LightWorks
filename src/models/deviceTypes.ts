@@ -1,8 +1,8 @@
 import { DeviceType } from './project'
-import { deviceRegistry, DeviceConfig } from '../hardware/deviceRegistry'
+import { deviceRegistry, DeviceConfig } from '../../hardware/deviceRegistry'
 
 // Re-export the device registry types for backward compatibility
-export type { DeviceConfig as DeviceTypeInfo } from '../hardware/deviceRegistry'
+export type { DeviceConfig as DeviceTypeInfo } from '../../hardware/deviceRegistry'
 
 // Legacy function for backward compatibility
 export async function getDeviceTypeInfo(type: DeviceType): Promise<DeviceConfig | undefined> {

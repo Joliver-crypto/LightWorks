@@ -6,8 +6,8 @@ import { Button } from '../Common/Button'
 import { Badge } from '../Common/Badge'
 import { useFileStore } from '../../storage/useFileStore'
 import { useSelectionStore } from '../../state/useSelectionStore'
-import { deviceRegistry, DeviceConfig } from '../../hardware/deviceRegistry'
-import { executeArduinoCommand, connectToArduino, disconnectFromArduino } from '../../hardware/arduinoClient'
+import { deviceRegistry, DeviceConfig } from '../../../hardware/deviceRegistry'
+import { executeArduinoCommand, connectToArduino, disconnectFromArduino } from '../../../hardware/arduinoClient'
 
 interface DeviceInspectorProps {
   device?: Component
@@ -499,6 +499,135 @@ export function DeviceInspector({ device }: DeviceInspectorProps) {
               </div>
             </div>
 
+            {/* Device Size - Only show for laser devices */}
+            {(() => {
+              console.log('Device type in inspector:', device.type);
+              return (device.type.includes('laser') || device.type === 'Laser');
+            })() && (
+              <div>
+                <h3 className="font-medium text-gray-900 mb-3">Device Size (Grid Holes)</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Width <span className="text-xs text-gray-500">(1-10 holes)</span>
+                    </label>
+                    <div className="flex gap-1">
+                      <Input
+                        type="number"
+                        min="1"
+                        max="10"
+                        value={device.size?.width || 1}
+                        onChange={(e) => {
+                          const width = Math.max(1, Math.min(10, parseInt(e.target.value) || 1))
+                          updateComponent(device.id, { 
+                            size: { 
+                              width, 
+                              height: device.size?.height || 1 
+                            } 
+                          })
+                        }}
+                        disabled={device.locked}
+                      />
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          const currentWidth = device.size?.width || 1
+                          const newWidth = Math.max(1, currentWidth - 1)
+                          updateComponent(device.id, { 
+                            size: { 
+                              width: newWidth, 
+                              height: device.size?.height || 1 
+                            } 
+                          })
+                        }}
+                        disabled={device.locked || (device.size?.width || 1) <= 1}
+                      >
+                        -
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          const currentWidth = device.size?.width || 1
+                          const newWidth = Math.min(10, currentWidth + 1)
+                          updateComponent(device.id, { 
+                            size: { 
+                              width: newWidth, 
+                              height: device.size?.height || 1 
+                            } 
+                          })
+                        }}
+                        disabled={device.locked || (device.size?.width || 1) >= 10}
+                      >
+                        +
+                      </Button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Height <span className="text-xs text-gray-500">(1-10 holes)</span>
+                    </label>
+                    <div className="flex gap-1">
+                      <Input
+                        type="number"
+                        min="1"
+                        max="10"
+                        value={device.size?.height || 1}
+                        onChange={(e) => {
+                          const height = Math.max(1, Math.min(10, parseInt(e.target.value) || 1))
+                          updateComponent(device.id, { 
+                            size: { 
+                              width: device.size?.width || 1, 
+                              height 
+                            } 
+                          })
+                        }}
+                        disabled={device.locked}
+                      />
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          const currentHeight = device.size?.height || 1
+                          const newHeight = Math.max(1, currentHeight - 1)
+                          updateComponent(device.id, { 
+                            size: { 
+                              width: device.size?.width || 1, 
+                              height: newHeight 
+                            } 
+                          })
+                        }}
+                        disabled={device.locked || (device.size?.height || 1) <= 1}
+                      >
+                        -
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          const currentHeight = device.size?.height || 1
+                          const newHeight = Math.min(10, currentHeight + 1)
+                          updateComponent(device.id, { 
+                            size: { 
+                              width: device.size?.width || 1, 
+                              height: newHeight 
+                            } 
+                          })
+                        }}
+                        disabled={device.locked || (device.size?.height || 1) >= 10}
+                      >
+                        +
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-2 text-xs text-gray-500">
+                  Current size: {device.size?.width || 1} × {device.size?.height || 1} holes
+                </div>
+              </div>
+            )}
+
             {/* Metadata */}
             {device.meta && Object.keys(device.meta).length > 0 && (
               <div>
@@ -517,7 +646,7 @@ export function DeviceInspector({ device }: DeviceInspectorProps) {
         )}
 
         {activeTab === 'commands' && (
-          <div className="p-4">
+          <div>
             {loading ? (
               <div className="text-center py-8 text-gray-500">
                 <div className="text-4xl mb-2">⏳</div>
@@ -765,7 +894,7 @@ export function DeviceInspector({ device }: DeviceInspectorProps) {
         )}
 
         {activeTab === 'telemetry' && (
-          <div className="p-4">
+          <div>
             {loading ? (
               <div className="text-center py-8 text-gray-500">
                 <div className="text-4xl mb-2">⏳</div>

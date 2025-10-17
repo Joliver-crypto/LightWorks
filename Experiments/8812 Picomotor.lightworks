@@ -4,9 +4,9 @@
   "meta": {
     "app": "LightWorks",
     "createdAt": 1758648329395,
-    "modifiedAt": 1759723440007,
+    "modifiedAt": 1760659941909,
     "author": "user",
-    "checksum": "6ab4cfe5"
+    "checksum": "22f7b306"
   },
   "table": {
     "id": "bd141508-c12d-4168-91a4-9bde5fd22403",
@@ -41,12 +41,12 @@
       "type": "motor.jankomotor.8812",
       "label": "8812",
       "pose": {
-        "x": 75,
-        "y": 75,
+        "x": 50,
+        "y": 100,
         "theta": 90
       },
       "holePose": {
-        "i": 4,
+        "i": 2,
         "j": 4,
         "theta": 90
       },
@@ -59,12 +59,12 @@
       "label": "generic",
       "pose": {
         "x": 25,
-        "y": 50,
+        "y": 25,
         "theta": 90
       },
       "holePose": {
         "i": 1,
-        "j": 2,
+        "j": 1,
         "theta": 90
       },
       "locked": false,
@@ -92,13 +92,13 @@
       "type": "sensor.generic",
       "label": "generic",
       "pose": {
-        "x": 200,
-        "y": 100,
+        "x": 175,
+        "y": 125,
         "theta": -90
       },
       "holePose": {
-        "i": 8,
-        "j": 4,
+        "i": 7,
+        "j": 5,
         "theta": -90
       },
       "locked": false,

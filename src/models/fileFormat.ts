@@ -45,6 +45,10 @@ export const ComponentSchema = z.object({
   pose: Pose2DSchema,                // continuous position + orientation
   holePose: HolePoseSchema,          // snapped to grid indices
   locked: z.boolean().default(false), // prevent accidental moves
+  size: z.object({
+    width: z.number().min(1).max(10).default(1),  // width in holes
+    height: z.number().min(1).max(10).default(1)  // height in holes
+  }).optional(),
   meta: z.record(z.any()).optional() // e.g., focal length, reflectivity, mount id, etc.
 })
 export type Component = z.infer<typeof ComponentSchema>

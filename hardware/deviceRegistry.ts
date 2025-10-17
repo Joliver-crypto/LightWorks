@@ -1,4 +1,5 @@
-import { DeviceType } from '../models/project'
+import { DeviceType } from '../src/models/project'
+import { DeviceCapabilities } from './interfaces/IDevice'
 
 // Device configuration interface
 export interface DeviceConfig {
@@ -18,6 +19,7 @@ export interface DeviceConfig {
       type: 'string' | 'number' | 'boolean'
       required: boolean
       default?: any
+      options?: string[]
     }>
   }>
   telemetry: Array<{
@@ -43,6 +45,9 @@ export interface DeviceConfig {
       timeout?: number
     }
   }
+  // New capability-based fields
+  capabilities?: DeviceCapabilities
+  factory?: any // Device factory class
 }
 
 // Device registry class
@@ -78,12 +83,14 @@ export class DeviceRegistry {
             'GenericLaser',
             'GenericMirror', 
             'GenericSplitter',
+            'GenericPolarizer',
             'AndorCamera',
             'ThorlabsKDC101',
             'Jankomotor8812',
             'NewportESP',
             'GenericSensor',
-            'AndorSR750'
+            'AndorSR750',
+            'DMK37'
           ]
         }
       } catch (error) {
@@ -93,12 +100,14 @@ export class DeviceRegistry {
           'GenericLaser',
           'GenericMirror', 
           'GenericSplitter',
+          'GenericPolarizer',
           'AndorCamera',
           'ThorlabsKDC101',
           'Jankomotor8812',
           'NewportESP',
           'GenericSensor',
-          'AndorSR750'
+          'AndorSR750',
+          'DMK37'
         ]
       }
 
@@ -182,6 +191,28 @@ export class DeviceRegistry {
             { name: 'wavelength', label: 'Design Wavelength', type: 'number', default: 632.8 }
           ],
           driver: { module: 'GenericSplitter.scripts.splitter_control', class: 'SplitterController', connection: { type: 'simulated', port: 'none' } }
+        },
+        'GenericPolarizer': {
+          type: 'polarizer.generic',
+          label: 'Polarizer',
+          icon: '◤',
+          color: '#8b5cf6',
+          category: 'optics',
+          description: 'Linear polarizer for polarization control',
+          size: { width: 1, height: 1 },
+          commands: [
+            { name: 'set_angle', label: 'Set Angle', description: 'Set polarizer angle', args: [{ name: 'angle', type: 'number', required: true, default: 0 }] }
+          ],
+          telemetry: [
+            { name: 'angle', label: 'Angle', unit: '°', type: 'number' },
+            { name: 'transmission', label: 'Transmission', unit: '%', type: 'number' }
+          ],
+          properties: [
+            { name: 'extinction_ratio', label: 'Extinction Ratio', type: 'number', default: 1000 },
+            { name: 'wavelength', label: 'Design Wavelength', type: 'number', default: 632.8 },
+            { name: 'material', label: 'Material', type: 'select', default: 'wire_grid', options: ['wire_grid', 'dichroic', 'birefringent'] }
+          ],
+          driver: { module: 'GenericPolarizer.scripts.polarizer_control', class: 'PolarizerController', connection: { type: 'simulated', port: 'none' } }
         },
         'AndorCamera': {
           type: 'camera.andor',
@@ -348,6 +379,43 @@ export class DeviceRegistry {
             { name: 'cooling', label: 'Cooling', type: 'boolean', default: true }
           ],
           driver: { module: 'AndorSR750.scripts.spectrograph_control', class: 'SpectrographController', connection: { type: 'usb', port: 'auto' } }
+        },
+        'DMK37': {
+          type: 'camera.dmk37',
+          label: 'DMK 37BUX252',
+          icon: '📷',
+          color: '#0ea5e9',
+          category: 'detection',
+          description: 'The Imaging Source DMK 37BUX252 scientific camera with cross-platform support',
+          size: { width: 2, height: 2 },
+          commands: [
+            { name: 'connect', label: 'Connect', description: 'Connect to camera', args: [{ name: 'serial', type: 'string', required: false, default: '' }] },
+            { name: 'disconnect', label: 'Disconnect', description: 'Disconnect from camera', args: [] },
+            { name: 'start_acquisition', label: 'Start Acquisition', description: 'Start image acquisition', args: [] },
+            { name: 'stop_acquisition', label: 'Stop Acquisition', description: 'Stop image acquisition', args: [] },
+            { name: 'set_exposure', label: 'Set Exposure', description: 'Set exposure time', args: [{ name: 'exposure_us', type: 'number', required: true, default: 1000 }] },
+            { name: 'set_gain', label: 'Set Gain', description: 'Set camera gain', args: [{ name: 'gain_db', type: 'number', required: true, default: 0 }] },
+            { name: 'set_roi', label: 'Set ROI', description: 'Set region of interest', args: [{ name: 'x', type: 'number', required: true, default: 0 }, { name: 'y', type: 'number', required: true, default: 0 }, { name: 'width', type: 'number', required: true, default: 1920 }, { name: 'height', type: 'number', required: true, default: 1080 }] },
+            { name: 'software_trigger', label: 'Software Trigger', description: 'Trigger single frame', args: [] },
+            { name: 'set_trigger_mode', label: 'Set Trigger Mode', description: 'Enable/disable hardware trigger', args: [{ name: 'enabled', type: 'boolean', required: true, default: false }] },
+            { name: 'set_trigger_source', label: 'Set Trigger Source', description: 'Set trigger source', args: [{ name: 'source', type: 'string', required: true, default: 'Software', options: ['Software', 'Line0', 'Line1'] }] }
+          ],
+          telemetry: [
+            { name: 'exposure_time', label: 'Exposure Time', unit: 'μs', type: 'number' },
+            { name: 'gain', label: 'Gain', unit: 'dB', type: 'number' },
+            { name: 'frame_rate', label: 'Frame Rate', unit: 'fps', type: 'number' },
+            { name: 'temperature', label: 'Temperature', unit: '°C', type: 'number' },
+            { name: 'image', label: 'Image', type: 'image' },
+            { name: 'roi', label: 'ROI', type: 'string' },
+            { name: 'trigger_mode', label: 'Trigger Mode', type: 'string' }
+          ],
+          properties: [
+            { name: 'pixel_format', label: 'Pixel Format', type: 'select', default: 'RGB24', options: ['RGB24', 'Mono8', 'Mono12'] },
+            { name: 'max_resolution', label: 'Max Resolution', type: 'select', default: '1920x1080', options: ['1920x1080', '1280x720', '640x480'] },
+            { name: 'trigger_mode', label: 'Trigger Mode', type: 'boolean', default: false },
+            { name: 'trigger_source', label: 'Trigger Source', type: 'select', default: 'Software', options: ['Software', 'Line0', 'Line1'] }
+          ],
+          driver: { module: 'DMK37.scripts.dmk37_controller', class: 'DMK37Controller', connection: { type: 'usb', port: 'auto' } }
         }
       }
 
