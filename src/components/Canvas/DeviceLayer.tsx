@@ -135,9 +135,9 @@ export const DeviceLayer: React.FC<DeviceLayerProps> = memo(({
     // Snap to the closest grid hole first
     let snapped = snapToHole(worldPos, grid);
     
-    // IMPORTANT: The snapped position represents the CENTER hole of the device
-    // For multi-hole devices, we need to ensure the center hole is valid
-    // and that the device doesn't extend beyond grid boundaries
+    // IMPORTANT: The snapped position represents the FIRST HOLE (mounting point) of the device
+    // For multi-hole devices, we need to ensure the device doesn't extend beyond grid boundaries
+    // The device grows right and down from the first hole
     
     // Calculate grid boundaries based on hole count (1-based indexing)
     const maxHoleX = grid.nx || 10; // Maximum i value (1-based)
@@ -149,20 +149,15 @@ export const DeviceLayer: React.FC<DeviceLayerProps> = memo(({
     const minWorldX = grid.origin.x;
     const minWorldY = grid.origin.y;
     
-    // For multi-hole devices, ensure the center hole allows the device to fit
-    // The device extends (width-1)/2 holes on each side from the center
-    const halfWidth = (deviceSize.width - 1) * grid.pitch / 2;
-    const halfHeight = (deviceSize.height - 1) * grid.pitch / 2;
+    // For multi-hole devices, ensure the first hole allows the device to fit
+    // The device extends (width-1) holes to the right and (height-1) holes down
+    const maxAllowedX = maxWorldX - (deviceSize.width - 1) * grid.pitch;
+    const maxAllowedY = maxWorldY - (deviceSize.height - 1) * grid.pitch;
     
-    const maxAllowedX = maxWorldX - halfWidth;
-    const maxAllowedY = maxWorldY - halfHeight;
-    const minAllowedX = minWorldX + halfWidth;
-    const minAllowedY = minWorldY + halfHeight;
-    
-    // Clamp the snapped position to valid center positions
+    // Clamp the snapped position to valid first hole positions
     snapped = {
-      x: Math.max(minAllowedX, Math.min(maxAllowedX, snapped.x)),
-      y: Math.max(minAllowedY, Math.min(maxAllowedY, snapped.y))
+      x: Math.max(minWorldX, Math.min(maxAllowedX, snapped.x)),
+      y: Math.max(minWorldY, Math.min(maxAllowedY, snapped.y))
     };
     
     // Update the device position in the store
@@ -193,11 +188,11 @@ export const DeviceLayer: React.FC<DeviceLayerProps> = memo(({
         return (
           <Group
             key={d.id}
-            // Position the device group so the center sits on a grid hole
+            // Position the device group at the first hole (mounting point)
             x={d.pose.x}
             y={d.pose.y}
             rotation={d.pose.theta ?? 0}
-            // No offset - the pose.x and pose.y should be the center hole position
+            // No offset - the pose.x and pose.y should be the first hole position
             offsetX={0}
             offsetY={0}
             // Only allow dragging if device is not locked
@@ -209,10 +204,10 @@ export const DeviceLayer: React.FC<DeviceLayerProps> = memo(({
             onDragEnd={(e) => handleDragEnd(e, d.id)}
             listening
           >
-            {/* Device body - centered on the grid hole */}
+            {/* Device body - starts at first hole, expands right and down */}
             <Rect
-              x={-deviceSize.width / 2}  // Center the device on the hole
-              y={-deviceSize.height / 2}  // Center the device on the hole
+              x={-grid.pitch / 2}  // Shift to center on the first hole
+              y={-grid.pitch / 2}  // Shift to center on the first hole
               width={deviceSize.width}
               height={deviceSize.height}
               cornerRadius={CORNER}
@@ -225,13 +220,13 @@ export const DeviceLayer: React.FC<DeviceLayerProps> = memo(({
               shadowOpacity={isDragging ? 0.3 : 0.1}
             />
             
-            {/* Professional device icon - centered on the grid hole */}
+            {/* Professional device icon - centered in the first hole (mounting point) */}
             <Text
               text={getProfessionalIcon(d.type)}
               fontSize={16}
               fill="white"
-              x={0}  // Center on the grid hole
-              y={0}  // Center on the grid hole
+              x={0}  // Center on the first hole
+              y={0}  // Center on the first hole
               offsetX={8}
               offsetY={8}
               align="center"
@@ -240,8 +235,8 @@ export const DeviceLayer: React.FC<DeviceLayerProps> = memo(({
             
             {/* Direction indicator - small rounded rectangle extending above device */}
             <Rect
-              x={-6}  // Center on the grid hole, adjusted for 12px width
-              y={-deviceSize.height / 2 - 3}  // Position above the device edge
+              x={-6}  // Center on the first hole, adjusted for 12px width
+              y={-grid.pitch / 2 - 3}  // Position above the device edge
               width={12}  // Longer width
               height={6}  // Small height
               fill="#000000"
@@ -254,8 +249,8 @@ export const DeviceLayer: React.FC<DeviceLayerProps> = memo(({
               text={d.label || d.type}
               fontSize={12}
               fill="#374151"
-              x={0}  // Center horizontally on the grid hole
-              y={deviceSize.height / 2 + 8}  // Position below the device
+              x={0}  // Center horizontally
+              y={deviceSize.height - grid.pitch / 2 + 8}  // Position below the device
               offsetX={deviceSize.width / 2}  // Center horizontally
               width={deviceSize.width * 2}        // Give some room for text
               align="center"

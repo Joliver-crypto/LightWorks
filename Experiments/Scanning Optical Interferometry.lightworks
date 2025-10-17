@@ -4,9 +4,9 @@
   "meta": {
     "app": "LightWorks",
     "createdAt": 1760662378093,
-    "modifiedAt": 1760669883116,
+    "modifiedAt": 1760671055520,
     "author": "user",
-    "checksum": "3434090f"
+    "checksum": "463518a2"
   },
   "table": {
     "id": "c748240d-437b-4d06-b20f-793957df2f1a",
@@ -73,21 +73,21 @@
     },
     {
       "type": "laser.generic",
-      "label": "generic",
+      "label": "Low Cost Laser",
       "pose": {
-        "x": 100,
-        "y": 125,
+        "x": 0,
+        "y": 0,
         "theta": -180
       },
       "holePose": {
-        "i": 4,
-        "j": 5,
+        "i": 0,
+        "j": 0,
         "theta": -180
       },
       "locked": false,
       "size": {
-        "width": 1,
-        "height": 3
+        "width": 2,
+        "height": 2
       },
       "meta": {},
       "id": "16d30ba8-5e7e-40ed-8796-3eda17ba0e6f"
