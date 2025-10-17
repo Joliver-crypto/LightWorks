@@ -4,9 +4,9 @@
   "meta": {
     "app": "LightWorks",
     "createdAt": 1760662378093,
-    "modifiedAt": 1760669341060,
+    "modifiedAt": 1760669883116,
     "author": "user",
-    "checksum": "9aebb58"
+    "checksum": "3434090f"
   },
   "table": {
     "id": "c748240d-437b-4d06-b20f-793957df2f1a",
@@ -41,13 +41,13 @@
       "type": "camera.dmk37",
       "label": "dmk37",
       "pose": {
-        "x": 75,
-        "y": 175,
+        "x": 100,
+        "y": 200,
         "theta": 0
       },
       "holePose": {
-        "i": 3,
-        "j": 7,
+        "i": 4,
+        "j": 8,
         "theta": 0
       },
       "locked": false,
@@ -58,13 +58,13 @@
       "type": "polarizer.generic",
       "label": "generic",
       "pose": {
-        "x": 50,
-        "y": 200,
+        "x": 175,
+        "y": 175,
         "theta": 0
       },
       "holePose": {
-        "i": 2,
-        "j": 8,
+        "i": 7,
+        "j": 7,
         "theta": 0
       },
       "locked": false,
@@ -76,12 +76,12 @@
       "label": "generic",
       "pose": {
         "x": 100,
-        "y": 100,
+        "y": 125,
         "theta": -180
       },
       "holePose": {
         "i": 4,
-        "j": 4,
+        "j": 5,
         "theta": -180
       },
       "locked": false,
