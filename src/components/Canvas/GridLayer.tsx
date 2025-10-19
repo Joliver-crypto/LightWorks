@@ -1,17 +1,18 @@
 import { useMemo, useState, useCallback } from 'react'
 import { Line, Circle, Rect, Text } from 'react-konva'
 import { Table } from '../../models/fileFormat'
-import { generateGridLines, getGridCellSize, gridToGridConfig, generateGridHoles, worldToHoleCoords } from '../../utils/grid'
+import { generateGridLines, getGridCellSize, gridToGridConfig, generateGridHoles, worldToHoleCoords, getTableBorderBounds } from '../../utils/grid'
 
 interface GridLayerProps {
   table: Table
   viewport: { x: number; y: number; scale: number }
   stageSize: { width: number; height: number }
+  onTableClick?: () => void
   showCoordinates?: boolean
   highlightHoles?: boolean
 }
 
-export function GridLayer({ table, viewport, stageSize, showCoordinates = false, highlightHoles = false }: GridLayerProps) {
+export function GridLayer({ table, viewport, stageSize, onTableClick, showCoordinates = false, highlightHoles = false }: GridLayerProps) {
   const [hoveredHole, setHoveredHole] = useState<{ x: number; y: number } | null>(null)
   const gridConfig = gridToGridConfig(table.grid, table.width, table.height, table.units)
 
@@ -61,14 +62,17 @@ export function GridLayer({ table, viewport, stageSize, showCoordinates = false,
     setHoveredHole(hole)
   }, [])
 
+  // Calculate table border bounds including margins
+  const tableBorderBounds = getTableBorderBounds(gridConfig)
+
   return (
     <>
-      {/* Table border with enhanced styling */}
+      {/* Table border with enhanced styling - includes margins */}
       <Rect
-        x={gridConfig.origin.x}
-        y={gridConfig.origin.y}
-        width={gridConfig.width}
-        height={gridConfig.height}
+        x={tableBorderBounds.x}
+        y={tableBorderBounds.y}
+        width={tableBorderBounds.width}
+        height={tableBorderBounds.height}
         stroke="#374151"
         strokeWidth={3}
         fill="transparent"
@@ -77,6 +81,9 @@ export function GridLayer({ table, viewport, stageSize, showCoordinates = false,
         shadowOffset={{ x: 2, y: 2 }}
         shadowOpacity={0.15}
         cornerRadius={2}
+        onClick={onTableClick}
+        onTap={onTableClick}
+        listening={true}
       />
       
       {/* Grid lines with improved styling */}

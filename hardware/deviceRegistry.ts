@@ -84,6 +84,7 @@ export class DeviceRegistry {
             'GenericMirror', 
             'GenericSplitter',
             'GenericPolarizer',
+            'GenericFilter',
             'AndorCamera',
             'ThorlabsKDC101',
             'Jankomotor8812',
@@ -101,6 +102,7 @@ export class DeviceRegistry {
           'GenericMirror', 
           'GenericSplitter',
           'GenericPolarizer',
+          'GenericFilter',
           'AndorCamera',
           'ThorlabsKDC101',
           'Jankomotor8812',
@@ -416,6 +418,29 @@ export class DeviceRegistry {
             { name: 'trigger_source', label: 'Trigger Source', type: 'select', default: 'Software', options: ['Software', 'Line0', 'Line1'] }
           ],
           driver: { module: 'DMK37.scripts.dmk37_controller', class: 'DMK37Controller', connection: { type: 'usb', port: 'auto' } }
+        },
+        'GenericFilter': {
+          type: 'filter.generic',
+          label: 'Filter',
+          icon: '🔍',
+          color: '#f97316',
+          category: 'optics',
+          description: 'Optical filter for wavelength selection',
+          size: { width: 1, height: 1 },
+          commands: [
+            { name: 'set_wavelength', label: 'Set Wavelength', description: 'Set filter wavelength', args: [{ name: 'wavelength', type: 'number', required: true, default: 500 }] }
+          ],
+          telemetry: [
+            { name: 'wavelength', label: 'Wavelength', unit: 'nm', type: 'number' },
+            { name: 'transmission', label: 'Transmission', unit: '%', type: 'number' }
+          ],
+          properties: [
+            { name: 'wavelength', label: 'Center Wavelength', type: 'number', default: 500 },
+            { name: 'bandwidth', label: 'Bandwidth', type: 'number', default: 10 },
+            { name: 'transmission', label: 'Transmission', type: 'number', default: 90 },
+            { name: 'filter_type', label: 'Filter Type', type: 'select', default: 'bandpass', options: ['bandpass', 'longpass', 'shortpass', 'notch'] }
+          ],
+          driver: { module: 'GenericFilter.scripts.filter_control', class: 'FilterController', connection: { type: 'simulated', port: 'none' } }
         }
       }
 

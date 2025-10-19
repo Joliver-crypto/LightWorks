@@ -499,10 +499,17 @@ export function DeviceInspector({ device }: DeviceInspectorProps) {
               </div>
             </div>
 
-            {/* Device Size - Only show for laser devices */}
+            {/* Device Size - Show for devices that support resizing */}
             {(() => {
               console.log('Device type in inspector:', device.type);
-              return (device.type.includes('laser') || device.type === 'Laser');
+              // Show size controls for devices that can be resized (larger than 1x1 or specific types)
+              return (device.type.includes('laser') || device.type === 'Laser' || 
+                      device.type.includes('stage') || device.type === 'Stage' ||
+                      device.type.includes('camera') || device.type === 'Camera' ||
+                      device.type.includes('motor') || device.type === 'Motor' ||
+                      device.type.includes('spectrograph') || device.type === 'SR-750' ||
+                      device.type.includes('newport') || device.type.includes('esp') ||
+                      device.type.includes('thorlabs') || device.type.includes('jankomotor'));
             })() && (
               <div>
                 <h3 className="font-medium text-gray-900 mb-3">Device Size (Grid Holes)</h3>

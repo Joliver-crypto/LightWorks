@@ -11,6 +11,12 @@ export interface GridConfig {
   units: 'mm' | 'inch'
   nx: number  // Number of holes in X direction
   ny: number  // Number of holes in Y direction
+  margins?: {
+    top: number
+    bottom: number
+    left: number
+    right: number
+  }
 }
 
 // Snap point to nearest grid hole (center-based)
@@ -35,6 +41,14 @@ export function gridToGridConfig(grid: Grid, width: number, height: number, unit
   const gridWidth = (nx - 1) * grid.pitch
   const gridHeight = (ny - 1) * grid.pitch
   
+  // Get margins with defaults
+  const margins = grid.margins || {
+    top: 38.1,    // 1.5 inches default
+    bottom: 38.1,
+    left: 38.1,
+    right: 38.1
+  }
+  
   return {
     pitch: grid.pitch,
     origin: grid.origin,
@@ -42,7 +56,8 @@ export function gridToGridConfig(grid: Grid, width: number, height: number, unit
     height: gridHeight,    // Use calculated height based on holes
     units,
     nx,                    // Store hole count
-    ny                     // Store hole count
+    ny,                    // Store hole count
+    margins                // Include margins for border calculation
   }
 }
 
@@ -70,6 +85,23 @@ export function getGridBounds(config: GridConfig): Rect {
     y: config.origin.y,
     width: config.width,
     height: config.height
+  }
+}
+
+// Get table border bounds including margins
+export function getTableBorderBounds(config: GridConfig): Rect {
+  const margins = config.margins || {
+    top: 38.1,
+    bottom: 38.1,
+    left: 38.1,
+    right: 38.1
+  }
+  
+  return {
+    x: config.origin.x - margins.left,
+    y: config.origin.y - margins.top,
+    width: config.width + margins.left + margins.right,
+    height: config.height + margins.top + margins.bottom
   }
 }
 

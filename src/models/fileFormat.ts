@@ -33,7 +33,8 @@ export const ComponentTypeSchema = z.enum([
   'BeamStop',
   'Lens',
   'Waveplate',
-  'PBS'
+  'PBS',
+  'Filter'
 ])
 export type ComponentType = z.infer<typeof ComponentTypeSchema>
 
@@ -78,7 +79,13 @@ export const GridSchema = z.object({
   origin: z.object({ x: z.number(), y: z.number() }), // canvas origin (mm)
   nx: z.number().int().positive().optional(), // number of holes in x
   ny: z.number().int().positive().optional(), // number of holes in y
-  snapToHoles: z.boolean().default(true)
+  snapToHoles: z.boolean().default(true),
+  margins: z.object({
+    top: z.number().min(0).default(38.1),     // margin in mm (1.5 inches default)
+    bottom: z.number().min(0).default(38.1),
+    left: z.number().min(0).default(38.1),
+    right: z.number().min(0).default(38.1)
+  }).optional()
 })
 export type Grid = z.infer<typeof GridSchema>
 
@@ -195,7 +202,13 @@ export const DEFAULT_TABLE: Table = {
     origin: { x: 0, y: 0 },
     nx: 36,
     ny: 24,
-    snapToHoles: true
+    snapToHoles: true,
+    margins: {
+      top: 38.1,    // 1.5 inches
+      bottom: 38.1,
+      left: 38.1,
+      right: 38.1
+    }
   },
   view: {
     zoom: 1.0,

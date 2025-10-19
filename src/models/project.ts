@@ -17,6 +17,7 @@ export const DeviceTypeEnum = z.enum([
   'mirror.generic',
   'splitter.generic',
   'polarizer.generic',
+  'filter.generic',
   'camera.andor',
   'camera.dmk37',
   'motor.thorlabs.kdc101',
@@ -88,12 +89,33 @@ export const DEVICE_TYPE_METADATA: Record<DeviceType, {
     category: 'optics',
     description: 'Beam splitter for power division'
   },
+  'filter.generic': {
+    label: 'Filter',
+    icon: '🔍',
+    color: 'bg-orange-500',
+    category: 'optics',
+    description: 'Optical filter for wavelength selection'
+  },
+  'polarizer.generic': {
+    label: 'Polarizer',
+    icon: '◤',
+    color: 'bg-purple-400',
+    category: 'optics',
+    description: 'Linear polarizer for polarization control'
+  },
   'camera.andor': {
     label: 'Andor Camera',
     icon: '📷',
     color: 'bg-green-500',
     category: 'detection',
     description: 'Andor scientific camera'
+  },
+  'camera.dmk37': {
+    label: 'DMK 37BUX252',
+    icon: '📷',
+    color: 'bg-blue-500',
+    category: 'detection',
+    description: 'The Imaging Source DMK 37BUX252 scientific camera'
   },
   'motor.thorlabs.kdc101': {
     label: 'Thorlabs KDC101',

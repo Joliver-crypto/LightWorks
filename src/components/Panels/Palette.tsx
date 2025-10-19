@@ -4,27 +4,28 @@ import { deviceRegistry, DeviceConfig } from '../../../hardware/deviceRegistry'
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline'
 
 // Default devices to show when search is empty
-const DEFAULT_DEVICES = ['laser.generic', 'mirror.generic', 'splitter.generic', 'polarizer.generic']
+const DEFAULT_DEVICES = ['laser.generic', 'mirror.generic', 'splitter.generic', 'polarizer.generic', 'filter.generic']
 
 // Professional icons to replace emojis
 const PROFESSIONAL_ICONS: Record<string, string> = {
   '🔴': '●', // Laser
   '🪞': '◢', // Mirror
-  '🔀': '◤', // Splitter
-  '◤': '◤', // Polarizer (already professional)
+  '🔀': '■', // Splitter (changed from triangle to square)
+  '◤': '⬬', // Polarizer (oval shape)
   '📷': '◉', // Camera
   '⚙️': '⚙', // Motor
   '🔧': '⚙', // Jankomotor
   '📐': '◢', // Stage
-  '📊': '◯', // Sensor
-  '🌈': '◯', // Spectrograph
+  '📊': '⬬', // Sensor (oval shape)
+  '🌈': '⬬', // Spectrograph (oval shape)
+  '🔍': '⬬', // Filter (oval shape)
 }
 
 export function Palette() {
   const [devices, setDevices] = useState<DeviceConfig[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [showCategorizedList, setShowCategorizedList] = useState(false)
+  const [showCategorizedList, setShowCategorizedList] = useState(true)
 
   useEffect(() => {
     const loadDevices = async () => {
@@ -112,10 +113,10 @@ export function Palette() {
             onClick={() => setShowCategorizedList(!showCategorizedList)}
             className="text-xs text-blue-600 hover:text-blue-800 font-medium"
           >
-            {showCategorizedList ? 'Hide' : 'Show'} categorized list
+            {showCategorizedList ? 'Hide' : 'Show'} all devices
           </button>
           <span className="text-xs text-gray-500">
-            {filteredDevices.length} component{filteredDevices.length !== 1 ? 's' : ''}
+            {devices.length} component{devices.length !== 1 ? 's' : ''}
           </span>
         </div>
       </div>

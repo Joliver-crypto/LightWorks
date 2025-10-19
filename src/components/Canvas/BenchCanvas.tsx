@@ -133,6 +133,7 @@ export function BenchCanvas() {
   const handleStageClick = (e: any) => {
     const stage = e.target.getStage()
     const clickedOnEmpty = e.target === stage
+    // Only clear selection if clicking on empty stage area (not on table or devices)
     if (clickedOnEmpty) {
       clearSelection()
     }
@@ -284,6 +285,7 @@ export function BenchCanvas() {
               table={currentTable.table}
               viewport={viewport}
               stageSize={stageSize}
+              onTableClick={clearSelection}
               showCoordinates={!performanceMode}
               highlightHoles={!performanceMode}
             />

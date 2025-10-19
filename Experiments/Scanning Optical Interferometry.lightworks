@@ -4,9 +4,9 @@
   "meta": {
     "app": "LightWorks",
     "createdAt": 1760662378093,
-    "modifiedAt": 1760671055520,
+    "modifiedAt": 1760829351952,
     "author": "user",
-    "checksum": "463518a2"
+    "checksum": "2ee47b3a"
   },
   "table": {
     "id": "c748240d-437b-4d06-b20f-793957df2f1a",
@@ -16,7 +16,7 @@
     "width": 2325,
     "height": 1125,
     "grid": {
-      "pitch": 25,
+      "pitch": 25.4,
       "thread": "1/4-20",
       "origin": {
         "x": 0,
@@ -24,7 +24,13 @@
       },
       "nx": 94,
       "ny": 46,
-      "snapToHoles": true
+      "snapToHoles": true,
+      "margins": {
+        "top": 38.1,
+        "bottom": 38.1,
+        "left": 38.1,
+        "right": 38.1
+      }
     },
     "view": {
       "zoom": 1,
@@ -41,13 +47,13 @@
       "type": "camera.dmk37",
       "label": "dmk37",
       "pose": {
-        "x": 100,
-        "y": 200,
+        "x": 965.1999999999999,
+        "y": 533.4,
         "theta": 0
       },
       "holePose": {
-        "i": 4,
-        "j": 8,
+        "i": 38,
+        "j": 21,
         "theta": 0
       },
       "locked": false,
@@ -56,16 +62,16 @@
     },
     {
       "type": "polarizer.generic",
-      "label": "generic",
+      "label": "polarizer",
       "pose": {
-        "x": 175,
-        "y": 175,
-        "theta": 0
+        "x": 838.1999999999999,
+        "y": 25.4,
+        "theta": -90
       },
       "holePose": {
-        "i": 7,
-        "j": 7,
-        "theta": 0
+        "i": 33,
+        "j": 1,
+        "theta": -90
       },
       "locked": false,
       "meta": {},
@@ -75,22 +81,253 @@
       "type": "laser.generic",
       "label": "Low Cost Laser",
       "pose": {
-        "x": 0,
-        "y": 0,
-        "theta": -180
+        "x": 457.2,
+        "y": 863.5999999999999,
+        "theta": -90
       },
       "holePose": {
-        "i": 0,
-        "j": 0,
-        "theta": -180
+        "i": 18,
+        "j": 34,
+        "theta": -90
       },
       "locked": false,
       "size": {
-        "width": 2,
-        "height": 2
+        "width": 1,
+        "height": 3
       },
       "meta": {},
       "id": "16d30ba8-5e7e-40ed-8796-3eda17ba0e6f"
+    },
+    {
+      "type": "mirror.generic",
+      "label": "mirror",
+      "pose": {
+        "x": 101.6,
+        "y": 863.5999999999999,
+        "theta": 45
+      },
+      "holePose": {
+        "i": 4,
+        "j": 34,
+        "theta": 45
+      },
+      "locked": false,
+      "size": {
+        "width": 1,
+        "height": 1
+      },
+      "meta": {},
+      "id": "0165582f-10e9-4eb1-aabb-d9a4647677b4"
+    },
+    {
+      "type": "mirror.generic",
+      "label": "mirror",
+      "pose": {
+        "x": 101.6,
+        "y": 584.1999999999999,
+        "theta": 135
+      },
+      "holePose": {
+        "i": 4,
+        "j": 23,
+        "theta": 135
+      },
+      "locked": false,
+      "size": {
+        "width": 1,
+        "height": 1
+      },
+      "meta": {},
+      "id": "2d7cabdc-75f1-4552-aff2-f46d327a7226"
+    },
+    {
+      "type": "filter.generic",
+      "label": "filter",
+      "pose": {
+        "x": 508,
+        "y": 584.1999999999999,
+        "theta": -90
+      },
+      "holePose": {
+        "i": 20,
+        "j": 23,
+        "theta": -90
+      },
+      "locked": false,
+      "size": {
+        "width": 1,
+        "height": 1
+      },
+      "meta": {},
+      "id": "a42c75c3-9526-4a81-a046-968bf3552796"
+    },
+    {
+      "type": "filter.generic",
+      "label": "filter",
+      "pose": {
+        "x": 482.59999999999997,
+        "y": 584.1999999999999,
+        "theta": -90
+      },
+      "holePose": {
+        "i": 19,
+        "j": 23,
+        "theta": -90
+      },
+      "locked": false,
+      "size": {
+        "width": 1,
+        "height": 1
+      },
+      "meta": {},
+      "id": "9d789ae7-3fc5-47d1-9e82-cfc372504328"
+    },
+    {
+      "type": "filter.generic",
+      "label": "filter",
+      "pose": {
+        "x": 330.2,
+        "y": 584.1999999999999,
+        "theta": -90
+      },
+      "holePose": {
+        "i": 13,
+        "j": 23,
+        "theta": -90
+      },
+      "locked": false,
+      "size": {
+        "width": 1,
+        "height": 1
+      },
+      "meta": {},
+      "id": "982147b5-051c-40be-b1bf-4db91ae63c3d"
+    },
+    {
+      "type": "filter.generic",
+      "label": "filter",
+      "pose": {
+        "x": 431.79999999999995,
+        "y": 584.1999999999999,
+        "theta": -90
+      },
+      "holePose": {
+        "i": 17,
+        "j": 23,
+        "theta": -90
+      },
+      "locked": false,
+      "size": {
+        "width": 1,
+        "height": 1
+      },
+      "meta": {},
+      "id": "da2e56ec-ad4d-4be8-9d0c-567c2cf06d87"
+    },
+    {
+      "type": "mirror.generic",
+      "label": "mirror",
+      "pose": {
+        "x": 711.1999999999999,
+        "y": 584.1999999999999,
+        "theta": -44.96
+      },
+      "holePose": {
+        "i": 28,
+        "j": 23,
+        "theta": -44.96
+      },
+      "locked": false,
+      "size": {
+        "width": 1,
+        "height": 1
+      },
+      "meta": {},
+      "id": "0e9669d7-3402-438d-829c-f7ed0973fde5"
+    },
+    {
+      "type": "mirror.generic",
+      "label": "mirror",
+      "pose": {
+        "x": 711.1999999999999,
+        "y": 25.4,
+        "theta": 135
+      },
+      "holePose": {
+        "i": 28,
+        "j": 1,
+        "theta": 135
+      },
+      "locked": false,
+      "size": {
+        "width": 1,
+        "height": 1
+      },
+      "meta": {},
+      "id": "b7ac7f5e-2a8b-4fb5-bb0a-3aa9972ec827"
+    },
+    {
+      "type": "mirror.generic",
+      "label": "generic",
+      "pose": {
+        "x": 965.1999999999999,
+        "y": 25.4,
+        "theta": -135
+      },
+      "holePose": {
+        "i": 38,
+        "j": 1,
+        "theta": -135
+      },
+      "locked": false,
+      "size": {
+        "width": 1,
+        "height": 1
+      },
+      "meta": {},
+      "id": "85741e04-f96e-4789-a29a-932f925b893a"
+    },
+    {
+      "type": "splitter.generic",
+      "label": "beam splitter",
+      "pose": {
+        "x": 965.1999999999999,
+        "y": 279.4,
+        "theta": 0
+      },
+      "holePose": {
+        "i": 38,
+        "j": 11,
+        "theta": 0
+      },
+      "locked": false,
+      "size": {
+        "width": 1,
+        "height": 1
+      },
+      "meta": {},
+      "id": "008b47d2-a64e-42e6-a4fb-0b1944c1abb4"
+    },
+    {
+      "type": "stage.newport.esp",
+      "label": "translation stage",
+      "pose": {
+        "x": 1117.6,
+        "y": 279.4,
+        "theta": -90
+      },
+      "holePose": {
+        "i": 45,
+        "j": 12,
+        "theta": -90
+      },
+      "locked": false,
+      "size": {
+        "width": 1,
+        "height": 10
+      },
+      "meta": {},
+      "id": "ddf43d86-ba6e-4713-965f-bd3889d9d632"
     }
   ],
   "connections": [],

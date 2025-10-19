@@ -24,7 +24,13 @@
       },
       "nx": 100,
       "ny": 100,
-      "snapToHoles": true
+      "snapToHoles": true,
+      "margins": {
+        "top": 38.1,
+        "bottom": 38.1,
+        "left": 38.1,
+        "right": 38.1
+      }
     },
     "view": {
       "zoom": 1,

@@ -4,9 +4,9 @@
   "meta": {
     "app": "LightWorks",
     "createdAt": 1758648329395,
-    "modifiedAt": 1760659941909,
+    "modifiedAt": 1760829802755,
     "author": "user",
-    "checksum": "22f7b306"
+    "checksum": "678e3394"
   },
   "table": {
     "id": "bd141508-c12d-4168-91a4-9bde5fd22403",
@@ -24,7 +24,13 @@
       },
       "nx": 10,
       "ny": 10,
-      "snapToHoles": true
+      "snapToHoles": true,
+      "margins": {
+        "top": 38.1,
+        "bottom": 38.1,
+        "left": 38.1,
+        "right": 38.1
+      }
     },
     "view": {
       "zoom": 1,
@@ -41,14 +47,14 @@
       "type": "motor.jankomotor.8812",
       "label": "8812",
       "pose": {
-        "x": 50,
-        "y": 100,
-        "theta": 90
+        "x": 150,
+        "y": 25,
+        "theta": -134.96
       },
       "holePose": {
-        "i": 2,
-        "j": 4,
-        "theta": 90
+        "i": 6,
+        "j": 1,
+        "theta": -134.96
       },
       "locked": false,
       "meta": {},
@@ -56,33 +62,37 @@
     },
     {
       "type": "laser.generic",
-      "label": "generic",
+      "label": "NeHe laser",
       "pose": {
-        "x": 25,
-        "y": 25,
-        "theta": 90
+        "x": 0,
+        "y": 100,
+        "theta": 0
       },
       "holePose": {
-        "i": 1,
-        "j": 1,
-        "theta": 90
+        "i": 0,
+        "j": 4,
+        "theta": 0
       },
       "locked": false,
       "meta": {},
-      "id": "3cf87223-c55d-44d1-bc66-ce2ed456742a"
+      "id": "3cf87223-c55d-44d1-bc66-ce2ed456742a",
+      "size": {
+        "width": 1,
+        "height": 5
+      }
     },
     {
       "type": "mirror.generic",
       "label": "generic",
       "pose": {
-        "x": 175,
-        "y": 50,
-        "theta": -115
+        "x": 0,
+        "y": 25,
+        "theta": 135
       },
       "holePose": {
-        "i": 7,
-        "j": 2,
-        "theta": -115
+        "i": 0,
+        "j": 1,
+        "theta": 135
       },
       "locked": false,
       "meta": {},
@@ -90,20 +100,62 @@
     },
     {
       "type": "sensor.generic",
-      "label": "generic",
+      "label": "polarizer",
       "pose": {
-        "x": 175,
-        "y": 125,
+        "x": 75,
+        "y": 25,
         "theta": -90
       },
       "holePose": {
-        "i": 7,
-        "j": 5,
+        "i": 3,
+        "j": 1,
         "theta": -90
       },
       "locked": false,
       "meta": {},
       "id": "e1ccff1e-70dc-4de7-936d-8ff96b992230"
+    },
+    {
+      "type": "filter.generic",
+      "label": "filter",
+      "pose": {
+        "x": 150,
+        "y": 100,
+        "theta": 0
+      },
+      "holePose": {
+        "i": 6,
+        "j": 4,
+        "theta": 0
+      },
+      "locked": false,
+      "size": {
+        "width": 1,
+        "height": 1
+      },
+      "meta": {},
+      "id": "17a6c5e9-933f-4cff-b7e0-6bd05779576c"
+    },
+    {
+      "type": "spectrograph.andor.sr750",
+      "label": "Spectrometer",
+      "pose": {
+        "x": 150,
+        "y": 175,
+        "theta": 0
+      },
+      "holePose": {
+        "i": 6,
+        "j": 7,
+        "theta": 0
+      },
+      "locked": false,
+      "size": {
+        "width": 4,
+        "height": 3
+      },
+      "meta": {},
+      "id": "e84a6ef7-b68e-429d-be02-6cb143c06f2e"
     }
   ],
   "connections": [],

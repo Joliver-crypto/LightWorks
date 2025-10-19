@@ -29,14 +29,15 @@ const CORNER = 8;
 const PROFESSIONAL_ICONS: Record<string, string> = {
   '🔴': '●', // Laser
   '🪞': '◢', // Mirror
-  '🔀': '◤', // Splitter
-  '◤': '◤', // Polarizer (already professional)
+  '🔀': '■', // Splitter (changed from triangle to square)
+  '◤': '⬬', // Polarizer (oval shape)
   '📷': '◉', // Camera
   '⚙️': '⚙', // Motor
   '🔧': '⚙', // Jankomotor
   '📐': '◢', // Stage
-  '📊': '◯', // Sensor
-  '🌈': '◯', // Spectrograph
+  '📊': '⬬', // Sensor (oval shape)
+  '🌈': '⬬', // Spectrograph (oval shape)
+  '🔍': '⬬', // Filter (oval shape)
 }
 
 // Note: Direction color logic removed - now using black rectangle indicator
