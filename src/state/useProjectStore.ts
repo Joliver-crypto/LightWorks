@@ -9,6 +9,11 @@ interface ProjectState {
   isDirty: boolean
   lastSaved: Date | null
   
+  // History for undo/redo
+  history: Project[]
+  historyIndex: number
+  maxHistorySize: number
+  
   // Actions
   setProject: (project: Project) => void
   updateTable: (table: Partial<Table>) => void
@@ -29,10 +34,31 @@ interface ProjectState {
   markDirty: () => void
   markClean: () => void
   
+  // History management
+  saveToHistory: () => void
+  undo: () => void
+  redo: () => void
+  canUndo: () => boolean
+  canRedo: () => boolean
+  
   // Device queries
   getDevice: (id: string) => DeviceBinding | undefined
   getDevicesByType: (type: DeviceType) => DeviceBinding[]
   getDevicesInArea: (x: number, y: number, width: number, height: number) => DeviceBinding[]
+}
+
+// Helper function to save current state to history
+const saveToHistory = (state: ProjectState): { history: Project[]; historyIndex: number } => {
+  const currentProject = state.project
+  const newHistory = [...state.history.slice(0, state.historyIndex + 1), currentProject]
+  const trimmedHistory = newHistory.length > state.maxHistorySize 
+    ? newHistory.slice(-state.maxHistorySize)
+    : newHistory
+  
+  return {
+    history: trimmedHistory,
+    historyIndex: trimmedHistory.length - 1
+  }
 }
 
 export const useProjectStore = create<ProjectState>()(
@@ -43,42 +69,75 @@ export const useProjectStore = create<ProjectState>()(
       isDirty: false,
       lastSaved: null,
       
+      // History state
+      history: [DEFAULT_PROJECT],
+      historyIndex: 0,
+      maxHistorySize: 50,
+      
       // Project actions
       setProject: (project) => set({ project, isDirty: false, lastSaved: new Date() }),
       
-      updateTable: (tableUpdates) => set((state) => ({
-        project: {
+      updateTable: (tableUpdates) => set((state) => {
+        const newProject = {
           ...state.project,
           table: { ...state.project.table, ...tableUpdates }
-        },
-        isDirty: true
-      })),
+        }
+        
+        const historyUpdate = saveToHistory(state)
+        
+        return {
+          project: newProject,
+          isDirty: true,
+          ...historyUpdate
+        }
+      }),
       
-      addDevice: (device) => set((state) => ({
-        project: {
+      addDevice: (device) => set((state) => {
+        const newProject = {
           ...state.project,
           devices: [...state.project.devices, device]
-        },
-        isDirty: true
-      })),
+        }
+        
+        const historyUpdate = saveToHistory(state)
+        
+        return {
+          project: newProject,
+          isDirty: true,
+          ...historyUpdate
+        }
+      }),
       
-      updateDevice: (id, updates) => set((state) => ({
-        project: {
+      updateDevice: (id, updates) => set((state) => {
+        const newProject = {
           ...state.project,
           devices: state.project.devices.map(device =>
             device.id === id ? { ...device, ...updates } : device
           )
-        },
-        isDirty: true
-      })),
+        }
+        
+        const historyUpdate = saveToHistory(state)
+        
+        return {
+          project: newProject,
+          isDirty: true,
+          ...historyUpdate
+        }
+      }),
       
-      removeDevice: (id) => set((state) => ({
-        project: {
+      removeDevice: (id) => set((state) => {
+        const newProject = {
           ...state.project,
           devices: state.project.devices.filter(device => device.id !== id)
-        },
-        isDirty: true
-      })),
+        }
+        
+        const historyUpdate = saveToHistory(state)
+        
+        return {
+          project: newProject,
+          isDirty: true,
+          ...historyUpdate
+        }
+      }),
       
       removeDevices: (ids) => set((state) => ({
         project: {
@@ -194,7 +253,50 @@ export const useProjectStore = create<ProjectState>()(
           const deviceY = device.pos.y
           return deviceX >= x && deviceX <= x + width && deviceY >= y && deviceY <= y + height
         })
-      }
+      },
+      
+      // History management
+      saveToHistory: () => set((state) => {
+        const currentProject = state.project
+        const newHistory = [...state.history.slice(0, state.historyIndex + 1), currentProject]
+        
+        // Trim history if it exceeds max size
+        const trimmedHistory = newHistory.length > state.maxHistorySize 
+          ? newHistory.slice(-state.maxHistorySize)
+          : newHistory
+        
+        return {
+          history: trimmedHistory,
+          historyIndex: trimmedHistory.length - 1
+        }
+      }),
+      
+      undo: () => set((state) => {
+        if (state.historyIndex > 0) {
+          const newIndex = state.historyIndex - 1
+          return {
+            project: state.history[newIndex],
+            historyIndex: newIndex,
+            isDirty: true
+          }
+        }
+        return state
+      }),
+      
+      redo: () => set((state) => {
+        if (state.historyIndex < state.history.length - 1) {
+          const newIndex = state.historyIndex + 1
+          return {
+            project: state.history[newIndex],
+            historyIndex: newIndex,
+            isDirty: true
+          }
+        }
+        return state
+      }),
+      
+      canUndo: () => get().historyIndex > 0,
+      canRedo: () => get().historyIndex < get().history.length - 1
     }),
     {
       name: 'project-store',

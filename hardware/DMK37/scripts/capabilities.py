@@ -142,3 +142,5 @@ def get_platform_info() -> Dict[str, str]:
         'platform': platform.system(),
         'version': platform.version()
     }
+
+

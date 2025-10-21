@@ -56,3 +56,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Hardware triggering not supported on macOS
 - 12-bit mono not available on macOS
 - Frame rate limited to 30fps on Linux/macOS
+
+

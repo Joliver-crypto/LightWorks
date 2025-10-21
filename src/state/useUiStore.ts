@@ -48,6 +48,10 @@ interface UiState {
   sidebarLeftCollapsed: boolean
   sidebarRightCollapsed: boolean
   
+  // Canvas dimensions
+  canvasWidth: number
+  canvasHeight: number
+  
   // Modals and panels
   commandPaletteOpen: boolean
   settingsOpen: boolean
@@ -59,6 +63,7 @@ interface UiState {
   zoomIn: () => void
   zoomOut: () => void
   zoomToFit: () => void
+  zoomToFitWithViewport: (viewportWidth: number, viewportHeight: number) => void
   zoomToSelection: () => void
   zoomToCursor: (cursorX: number, cursorY: number, delta: number) => void
   panTo: (x: number, y: number) => void
@@ -94,6 +99,9 @@ interface UiState {
   setSidebarRightWidth: (width: number) => void
   toggleSidebarLeft: () => void
   toggleSidebarRight: () => void
+  
+  // Canvas actions
+  setCanvasSize: (width: number, height: number) => void
   
   // Modal actions
   openCommandPalette: () => void
@@ -145,6 +153,10 @@ export const useUiStore = create<UiState>()(
       sidebarLeftCollapsed: false,
       sidebarRightCollapsed: false,
       
+      // Canvas dimensions
+      canvasWidth: 800,
+      canvasHeight: 600,
+      
       // Modals
       commandPaletteOpen: false,
       settingsOpen: false,
@@ -162,11 +174,23 @@ export const useUiStore = create<UiState>()(
           state.viewport.scale * state.cameraSettings.zoomSpeed,
           state.cameraSettings.maxZoom
         )
+        
+        const newViewport = {
+          ...state.viewport,
+          scale: newScale
+        }
+        
+        // Update Wokwi navigation state to match
+        if (state.wokwiNavigation) {
+          state.wokwiNavigation.setState({
+            x: newViewport.x,
+            y: newViewport.y,
+            scale: newViewport.scale
+          })
+        }
+        
         return {
-          viewport: {
-            ...state.viewport,
-            scale: newScale
-          }
+          viewport: newViewport
         }
       }),
       
@@ -175,18 +199,105 @@ export const useUiStore = create<UiState>()(
           state.viewport.scale / state.cameraSettings.zoomSpeed,
           state.cameraSettings.minZoom
         )
+        
+        const newViewport = {
+          ...state.viewport,
+          scale: newScale
+        }
+        
+        // Update Wokwi navigation state to match
+        if (state.wokwiNavigation) {
+          state.wokwiNavigation.setState({
+            x: newViewport.x,
+            y: newViewport.y,
+            scale: newViewport.scale
+          })
+        }
+        
         return {
-          viewport: {
-            ...state.viewport,
-            scale: newScale
-          }
+          viewport: newViewport
         }
       }),
       
-      zoomToFit: () => {
-        // This will be implemented when we have access to project bounds
-        set({ viewport: DEFAULT_VIEWPORT })
-      },
+      zoomToFit: () => set((state) => {
+        // Use the stored canvas dimensions
+        const bounds = state.cameraSettings.bounds
+        
+        if (!bounds) {
+          // Fallback to default viewport if no bounds are set
+          return { viewport: DEFAULT_VIEWPORT }
+        }
+        
+        // Calculate content dimensions from bounds
+        const contentWidth = bounds.maxX - bounds.minX
+        const contentHeight = bounds.maxY - bounds.minY
+        
+        // Calculate scale to fit content in viewport with some padding
+        const padding = 50
+        const scaleX = (state.canvasWidth - padding * 2) / contentWidth
+        const scaleY = (state.canvasHeight - padding * 2) / contentHeight
+        const scale = Math.min(scaleX, scaleY, state.cameraSettings.maxZoom)
+        
+        // Center the content
+        const scaledWidth = contentWidth * scale
+        const scaledHeight = contentHeight * scale
+        const x = (state.canvasWidth - scaledWidth) / 2 - bounds.minX * scale
+        const y = (state.canvasHeight - scaledHeight) / 2 - bounds.minY * scale
+        
+        const newViewport = {
+          x,
+          y,
+          scale: Math.max(scale, state.cameraSettings.minZoom)
+        }
+        
+        
+        // Update Wokwi navigation state to match
+        if (state.wokwiNavigation) {
+          state.wokwiNavigation.setState({
+            x: newViewport.x,
+            y: newViewport.y,
+            scale: newViewport.scale
+          })
+        }
+        
+        return {
+          viewport: newViewport
+        }
+      }),
+      
+      zoomToFitWithViewport: (viewportWidth, viewportHeight) => set((state) => {
+        // Get the current camera bounds from the state
+        const bounds = state.cameraSettings.bounds
+        
+        if (!bounds) {
+          // Fallback to default viewport if no bounds are set
+          return { viewport: DEFAULT_VIEWPORT }
+        }
+        
+        // Calculate content dimensions from bounds
+        const contentWidth = bounds.maxX - bounds.minX
+        const contentHeight = bounds.maxY - bounds.minY
+        
+        // Calculate scale to fit content in viewport with some padding
+        const padding = 50
+        const scaleX = (viewportWidth - padding * 2) / contentWidth
+        const scaleY = (viewportHeight - padding * 2) / contentHeight
+        const scale = Math.min(scaleX, scaleY, state.cameraSettings.maxZoom)
+        
+        // Center the content
+        const scaledWidth = contentWidth * scale
+        const scaledHeight = contentHeight * scale
+        const x = (viewportWidth - scaledWidth) / 2 - bounds.minX * scale
+        const y = (viewportHeight - scaledHeight) / 2 - bounds.minY * scale
+        
+        return {
+          viewport: {
+            x,
+            y,
+            scale: Math.max(scale, state.cameraSettings.minZoom)
+          }
+        }
+      }),
       
       zoomToSelection: () => {
         // This will be implemented when we have selection bounds
@@ -292,9 +403,21 @@ export const useUiStore = create<UiState>()(
         
         if (!bounds) return viewport
         
+        // Calculate dynamic bounds based on zoom level
+        // When zoomed in more, allow more panning to see the full content
+        const zoomFactor = Math.max(1, viewport.scale)
+        const dynamicPadding = Math.max(200, (bounds.maxX - bounds.minX) * 0.3 * zoomFactor)
+        
+        const dynamicBounds = {
+          minX: bounds.minX - dynamicPadding,
+          maxX: bounds.maxX + dynamicPadding,
+          minY: bounds.minY - dynamicPadding,
+          maxY: bounds.maxY + dynamicPadding
+        }
+        
         return {
-          x: Math.max(bounds.minX, Math.min(bounds.maxX, viewport.x)),
-          y: Math.max(bounds.minY, Math.min(bounds.maxY, viewport.y)),
+          x: Math.max(dynamicBounds.minX, Math.min(dynamicBounds.maxX, viewport.x)),
+          y: Math.max(dynamicBounds.minY, Math.min(dynamicBounds.maxY, viewport.y)),
           scale: Math.max(
             state.cameraSettings.minZoom,
             Math.min(state.cameraSettings.maxZoom, viewport.scale)
@@ -428,6 +551,9 @@ export const useUiStore = create<UiState>()(
         }
         return state
       }),
+      
+      // Canvas actions
+      setCanvasSize: (width, height) => set({ canvasWidth: width, canvasHeight: height }),
       
       // Modal actions
       openCommandPalette: () => set({ commandPaletteOpen: true }),

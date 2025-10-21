@@ -7,7 +7,7 @@ import { GridLayer } from './GridLayer'
 import { DeviceLayer } from './DeviceLayer'
 import { SelectionLayer } from './SelectionLayer'
 import { createShortcutHandler, SHORTCUTS } from '../../utils/shortcuts'
-import { snapToHole, gridToGridConfig } from '../../utils/grid'
+import { snapToHole, gridToGridConfig, getTableBorderBounds } from '../../utils/grid'
 import { ComponentType } from '../../models/fileFormat'
 import { deviceRegistry } from '../../../hardware/deviceRegistry'
 
@@ -30,6 +30,7 @@ export function BenchCanvas() {
     toggleSidebarLeft,
     toggleSidebarRight,
     setCameraBounds,
+    setCanvasSize,
     // Wokwi-style navigation
     initWokwiNavigation,
     wokwiStartPan,
@@ -39,13 +40,17 @@ export function BenchCanvas() {
     updateWokwiNavigation
   } = useUiStore()
 
+
   // Handle container resize, including sidebar width changes
   useEffect(() => {
     if (!containerRef.current) return
 
     const update = () => {
-      const rect = containerRef.current!.getBoundingClientRect()
-      setStageSize({ width: rect.width, height: rect.height })
+      if (!containerRef.current) return
+      const rect = containerRef.current.getBoundingClientRect()
+      const newSize = { width: rect.width, height: rect.height }
+      setStageSize(newSize)
+      setCanvasSize(newSize.width, newSize.height)
     }
 
     update()
@@ -66,13 +71,15 @@ export function BenchCanvas() {
       const table = currentTable.table
       const gridConfig = gridToGridConfig(table.grid, table.width, table.height, table.units)
       
-      // Set camera bounds to table area with some padding
-      const padding = 200 // pixels
+      // Set camera bounds to allow proper panning when zoomed
+      // Calculate bounds that allow seeing the full table when zoomed in
+      const tableBounds = getTableBorderBounds(gridConfig)
+      const extraPadding = Math.max(gridConfig.width, gridConfig.height) * 0.5 // 50% of table size
       const bounds = {
-        minX: -padding,
-        maxX: gridConfig.width + padding,
-        minY: -padding,
-        maxY: gridConfig.height + padding
+        minX: tableBounds.x - extraPadding,
+        maxX: tableBounds.x + tableBounds.width + extraPadding,
+        minY: tableBounds.y - extraPadding,
+        maxY: tableBounds.y + tableBounds.height + extraPadding
       }
       
       setCameraBounds(bounds)

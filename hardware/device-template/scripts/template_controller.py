@@ -401,3 +401,5 @@ class MacOSTemplateDriver:
     def set_timeout(self, timeout: float) -> bool:
         print(f"Setting timeout: {timeout}s (macOS)")
         return True
+
+
