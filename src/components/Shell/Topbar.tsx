@@ -154,20 +154,6 @@ export function Topbar() {
           </Button>
         </div>
 
-        {/* Save */}
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleSave}
-            disabled={!currentTable}
-            title="Save Project (Ctrl+S)"
-          >
-            <DocumentArrowDownIcon className="w-4 h-4" />
-          </Button>
-        </div>
-
-        <div className="w-px h-6 bg-gray-300" />
 
         {/* Edit operations */}
         <div className="flex items-center gap-1">
@@ -227,6 +213,19 @@ export function Topbar() {
         <div className="w-px h-6 bg-gray-300" />
 
         <div className="flex-1" />
+
+        {/* Save */}
+        <div className="flex items-center gap-1 mr-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleSave}
+            disabled={!currentTable}
+            title="Save Project (Ctrl+S)"
+          >
+            <DocumentArrowDownIcon className="w-4 h-4" />
+          </Button>
+        </div>
 
         {/* Autosave status */}
         <div className="flex items-center text-sm text-gray-500 mr-4">
