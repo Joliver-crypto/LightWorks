@@ -5,9 +5,6 @@ import {
   MagnifyingGlassPlusIcon,
   MagnifyingGlassMinusIcon,
   ArrowsPointingOutIcon,
-  PlayIcon,
-  StopIcon,
-  ExclamationTriangleIcon,
   Bars3Icon,
   XMarkIcon,
   HomeIcon
@@ -37,12 +34,11 @@ function formatTimestamp(timestamp: number | null): string | null {
 export function Topbar() {
   const navigate = useNavigate()
   const { markClean } = useProjectStore()
+  const { undo, redo, canUndo, canRedo } = useFileStore()
   const { 
     zoomIn, 
     zoomOut, 
     zoomToFit, 
-    toggleSnapToGrid, 
-    snapToGrid,
     sidebarLeftCollapsed,
     sidebarRightCollapsed,
     toggleSidebarLeft,
@@ -98,23 +94,15 @@ export function Topbar() {
   const tableName = fileDisplayName || currentTable?.table?.name || 'Untitled Table'
 
   const handleUndo = () => {
-    console.log('Undo')
+    if (canUndo()) {
+      undo()
+    }
   }
 
   const handleRedo = () => {
-    console.log('Redo')
-  }
-
-  const handleRunWorkflow = () => {
-    console.log('Run workflow')
-  }
-
-  const handleStopWorkflow = () => {
-    console.log('Stop workflow')
-  }
-
-  const handleEmergencyStop = () => {
-    console.log('EMERGENCY STOP')
+    if (canRedo()) {
+      redo()
+    }
   }
 
   return (
@@ -166,20 +154,6 @@ export function Topbar() {
           </Button>
         </div>
 
-        {/* Save */}
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleSave}
-            disabled={!currentTable}
-            title="Save Project (Ctrl+S)"
-          >
-            <DocumentArrowDownIcon className="w-4 h-4" />
-          </Button>
-        </div>
-
-        <div className="w-px h-6 bg-gray-300" />
 
         {/* Edit operations */}
         <div className="flex items-center gap-1">
@@ -187,6 +161,7 @@ export function Topbar() {
             variant="ghost"
             size="sm"
             onClick={handleUndo}
+            disabled={!canUndo()}
             title="Undo (Ctrl+Z)"
           >
             <ArrowUturnLeftIcon className="w-4 h-4" />
@@ -196,6 +171,7 @@ export function Topbar() {
             variant="ghost"
             size="sm"
             onClick={handleRedo}
+            disabled={!canRedo()}
             title="Redo (Ctrl+Shift+Z)"
           >
             <ArrowUturnRightIcon className="w-4 h-4" />
@@ -236,19 +212,20 @@ export function Topbar() {
 
         <div className="w-px h-6 bg-gray-300" />
 
-        {/* Grid controls */}
-        <div className="flex items-center gap-1">
+        <div className="flex-1" />
+
+        {/* Save */}
+        <div className="flex items-center gap-1 mr-4">
           <Button
-            variant={snapToGrid ? "primary" : "ghost"}
+            variant="ghost"
             size="sm"
-            onClick={toggleSnapToGrid}
-            title="Toggle Snap to Grid (Ctrl+Shift+S)"
+            onClick={handleSave}
+            disabled={!currentTable}
+            title="Save Project (Ctrl+S)"
           >
-            Snap
+            <DocumentArrowDownIcon className="w-4 h-4" />
           </Button>
         </div>
-
-        <div className="flex-1" />
 
         {/* Autosave status */}
         <div className="flex items-center text-sm text-gray-500 mr-4">
@@ -257,41 +234,6 @@ export function Topbar() {
           ) : (
             <span>{lastSavedText ?? 'Not saved yet'}</span>
           )}
-        </div>
-
-        <div className="w-px h-6 bg-gray-300" />
-
-        {/* Workflow controls */}
-        <div className="flex items-center gap-1">
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={handleRunWorkflow}
-            title="Run Workflow (F5)"
-          >
-            <PlayIcon className="w-4 h-4" />
-            Run
-          </Button>
-          
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={handleStopWorkflow}
-            title="Stop Workflow (Escape)"
-          >
-            <StopIcon className="w-4 h-4" />
-            Stop
-          </Button>
-          
-          <Button
-            variant="danger"
-            size="sm"
-            onClick={handleEmergencyStop}
-            title="Emergency Stop"
-          >
-            <ExclamationTriangleIcon className="w-4 h-4" />
-            E-STOP
-          </Button>
         </div>
       </div>
 

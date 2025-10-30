@@ -61,3 +61,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Template only - requires customization for specific devices
 - Platform capabilities vary by implementation
 - Some features may not be available on all platforms
+
+

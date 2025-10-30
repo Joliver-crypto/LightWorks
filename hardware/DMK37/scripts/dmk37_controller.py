@@ -558,3 +558,5 @@ class MacOSDMK37Driver:
     def get_frame(self) -> Optional[bytes]:
         # Simulate frame data
         return b"mock_frame_data"
+
+

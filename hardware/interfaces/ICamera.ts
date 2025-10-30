@@ -117,3 +117,5 @@ export class ConnectionError extends CameraError {
     this.code = 'CONNECTION_ERROR'
   }
 }
+
+

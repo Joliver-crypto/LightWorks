@@ -15,6 +15,11 @@ interface FileState {
   community: Array<{ id: string; name: string; modifiedAt: number }>
   currentFolder: 'experiments' | 'community'
 
+  // History for undo/redo
+  history: LightWorksFile[]
+  historyIndex: number
+  maxHistorySize: number
+
   // Actions
   loadTable: (tableId: string, folder?: 'experiments' | 'community') => Promise<void>
   saveTable: () => Promise<void>
@@ -41,6 +46,13 @@ interface FileState {
   updateView: (updates: Partial<LightWorksFile['table']['view']>) => void
   updateGrid: (updates: Partial<LightWorksFile['table']['grid']>) => void
 
+  // History management
+  saveToHistory: () => void
+  undo: () => void
+  redo: () => void
+  canUndo: () => boolean
+  canRedo: () => boolean
+
   // Utility
   markDirty: () => void
   clearError: () => void
@@ -57,6 +69,11 @@ export const useFileStore = create<FileState>()(
       experiments: [],
       community: [],
       currentFolder: 'experiments',
+      
+      // History state
+      history: [],
+      historyIndex: -1,
+      maxHistorySize: 50,
 
       // Table management
       loadTable: async (tableId: string, folder: 'experiments' | 'community' = 'experiments') => {
@@ -67,7 +84,10 @@ export const useFileStore = create<FileState>()(
             currentTable: table, 
             isDirty: false, 
             isLoading: false,
-            currentFolder: folder
+            currentFolder: folder,
+            // Initialize history with the loaded table
+            history: [table],
+            historyIndex: 0
           })
         } catch (error) {
           set({ 
@@ -180,8 +200,11 @@ export const useFileStore = create<FileState>()(
 
       // Component operations
       addComponent: (component: Omit<Component, 'id'>) => {
-        const { currentTable } = get()
+        const { currentTable, saveToHistory } = get()
         if (!currentTable) return
+
+        // Save current state to history before making changes
+        saveToHistory()
 
         const newComponent: Component = {
           ...component,
@@ -202,8 +225,11 @@ export const useFileStore = create<FileState>()(
       },
 
       updateComponent: (id: string, updates: Partial<Component>) => {
-        const { currentTable } = get()
+        const { currentTable, saveToHistory } = get()
         if (!currentTable) return
+
+        // Save current state to history before making changes
+        saveToHistory()
 
         const updatedTable: LightWorksFile = {
           ...currentTable,
@@ -220,8 +246,11 @@ export const useFileStore = create<FileState>()(
       },
 
       removeComponent: (id: string) => {
-        const { currentTable } = get()
+        const { currentTable, saveToHistory } = get()
         if (!currentTable) return
+
+        // Save current state to history before making changes
+        saveToHistory()
 
         const updatedTable: LightWorksFile = {
           ...currentTable,
@@ -239,8 +268,11 @@ export const useFileStore = create<FileState>()(
       },
 
       moveComponent: (id: string, pose: { x: number; y: number; theta: number }) => {
-        const { currentTable } = get()
+        const { currentTable, saveToHistory } = get()
         if (!currentTable) return
+
+        // Save current state to history before making changes
+        saveToHistory()
 
         const holePose = poseToHolePose(pose, currentTable.table.grid)
 
@@ -389,6 +421,49 @@ export const useFileStore = create<FileState>()(
 
         set({ currentTable: updatedTable, isDirty: true })
       },
+
+      // History management
+      saveToHistory: () => set((state) => {
+        const currentTable = state.currentTable
+        if (!currentTable) return state
+        
+        const newHistory = [...state.history.slice(0, state.historyIndex + 1), currentTable]
+        const trimmedHistory = newHistory.length > state.maxHistorySize 
+          ? newHistory.slice(-state.maxHistorySize)
+          : newHistory
+        
+        return {
+          history: trimmedHistory,
+          historyIndex: trimmedHistory.length - 1
+        }
+      }),
+      
+      undo: () => set((state) => {
+        if (state.historyIndex > 0) {
+          const newIndex = state.historyIndex - 1
+          return {
+            currentTable: state.history[newIndex],
+            historyIndex: newIndex,
+            isDirty: true
+          }
+        }
+        return state
+      }),
+      
+      redo: () => set((state) => {
+        if (state.historyIndex < state.history.length - 1) {
+          const newIndex = state.historyIndex + 1
+          return {
+            currentTable: state.history[newIndex],
+            historyIndex: newIndex,
+            isDirty: true
+          }
+        }
+        return state
+      }),
+      
+      canUndo: () => get().historyIndex > 0,
+      canRedo: () => get().historyIndex < get().history.length - 1,
 
       // Utility
       markDirty: () => set({ isDirty: true }),

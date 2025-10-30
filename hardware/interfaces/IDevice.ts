@@ -49,3 +49,5 @@ export class ConnectionError extends DeviceError {
     this.code = 'CONNECTION_ERROR'
   }
 }
+
+

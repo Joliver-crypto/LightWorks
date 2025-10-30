@@ -58,6 +58,11 @@ export class WokwiNavigation {
     return { ...this.state }
   }
 
+  // Set navigation state (for manual zoom/pan)
+  setState(newState: Partial<NavigationState>): void {
+    this.state = { ...this.state, ...newState }
+  }
+
   // Update configuration
   updateConfig(newConfig: Partial<NavigationConfig>): void {
     this.config = { ...this.config, ...newConfig }
