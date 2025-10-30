@@ -1,0 +1,70 @@
+{
+  "appId": "com.lightworks.app",
+  "productName": "LightWorks",
+  "directories": {
+    "output": "dist-electron"
+  },
+  "files": [
+    "dist/**/*",
+    "electron/**/*",
+    "package.json",
+    "node_modules/**/*"
+  ],
+  "mac": {
+    "category": "public.app-category.science",
+    "target": [
+      {
+        "target": "dmg",
+        "arch": ["x64", "arm64"]
+      },
+      {
+        "target": "zip",
+        "arch": ["x64", "arm64"]
+      }
+    ],
+    "icon": "assets/icon.icns"
+  },
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64", "arm64"]
+      },
+      {
+        "target": "portable",
+        "arch": ["x64", "arm64"]
+      }
+    ],
+    "icon": "assets/icon.ico"
+  },
+  "linux": {
+    "target": [
+      {
+        "target": "AppImage",
+        "arch": ["x64", "arm64"]
+      },
+      {
+        "target": "deb",
+        "arch": ["x64", "arm64"]
+      }
+    ],
+    "category": "Science",
+    "icon": "assets/icon.png"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true
+  },
+  "dmg": {
+    "title": "LightWorks Installer",
+    "background": "assets/dmg-background.png",
+    "window": {
+      "width": 540,
+      "height": 380
+    }
+  }
+}
+
+

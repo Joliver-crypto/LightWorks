@@ -14,7 +14,12 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "electron-only": "electron .",
-    "electron-dev": "concurrently \"npm run dev\" \"wait-on http://localhost:3006 && electron .\""
+    "electron-dev": "concurrently \"npm run dev\" \"wait-on http://localhost:3006 && electron .\"",
+    "dist": "npm run build && electron-builder",
+    "dist:mac": "npm run build && electron-builder --mac",
+    "dist:win": "npm run build && electron-builder --win",
+    "dist:linux": "npm run build && electron-builder --linux",
+    "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
     "@heroicons/react": "^2.0.18",

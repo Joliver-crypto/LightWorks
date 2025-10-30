@@ -47,8 +47,20 @@ echo.
 
 REM Configuration
 set LIGHTWORKS_DIR=%USERPROFILE%\LightWorks
-set GITHUB_REPO=https://github.com/your-username/LightWorks.git
+set GITHUB_REPO=https://github.com/justinoliver/LightWorks.git
 set BRANCH=main
+
+REM Check if GitHub token is provided
+if defined GITHUB_TOKEN (
+    set GITHUB_REPO=https://%GITHUB_TOKEN%@github.com/justinoliver/LightWorks.git
+    echo Using GitHub token for authentication
+) else if defined GITHUB_USERNAME if defined GITHUB_PASSWORD (
+    set GITHUB_REPO=https://%GITHUB_USERNAME%:%GITHUB_PASSWORD%@github.com/justinoliver/LightWorks.git
+    echo Using GitHub credentials for authentication
+) else (
+    echo WARNING: No GitHub authentication provided. Using public access.
+    echo For private repos, set GITHUB_TOKEN or GITHUB_USERNAME/GITHUB_PASSWORD
+)
 
 REM Create or update LightWorks directory
 if exist "%LIGHTWORKS_DIR%" (

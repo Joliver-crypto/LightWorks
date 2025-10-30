@@ -10,13 +10,13 @@ This guide explains how to deploy LightWorks to lab computers and other systems.
 **macOS/Linux:**
 ```bash
 # Download and run the setup script
-curl -fsSL https://raw.githubusercontent.com/your-username/LightWorks/main/setup-lab-computer.sh | bash
+curl -fsSL https://raw.githubusercontent.com/justinoliver/LightWorks/main/setup-lab-computer.sh | bash
 ```
 
 **Windows:**
 ```cmd
 # Download and run the setup script
-powershell -Command "Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/your-username/LightWorks/main/setup-lab-computer.bat' -OutFile 'setup-lab-computer.bat'; .\setup-lab-computer.bat"
+powershell -Command "Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/justinoliver/LightWorks/main/setup-lab-computer.bat' -OutFile 'setup-lab-computer.bat'; .\setup-lab-computer.bat"
 ```
 
 ### Option 2: Platform-Specific Installers
@@ -45,7 +45,7 @@ powershell -Command "Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/y
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/LightWorks.git
+git clone https://github.com/justinoliver/LightWorks.git
 cd LightWorks
 
 # Run platform-specific setup:

@@ -20,8 +20,20 @@ echo ""
 
 # Configuration
 LIGHTWORKS_DIR="$HOME/LightWorks"
-GITHUB_REPO="https://github.com/your-username/LightWorks.git"  # Update this with your actual repo
+GITHUB_REPO="https://github.com/justinoliver/LightWorks.git"  # Update this with your actual repo
 BRANCH="main"
+
+# Check if GitHub token is provided
+if [ -n "$GITHUB_TOKEN" ]; then
+    GITHUB_REPO="https://$GITHUB_TOKEN@github.com/justinoliver/LightWorks.git"
+    echo -e "${GREEN}✅ Using GitHub token for authentication${NC}"
+elif [ -n "$GITHUB_USERNAME" ] && [ -n "$GITHUB_PASSWORD" ]; then
+    GITHUB_REPO="https://$GITHUB_USERNAME:$GITHUB_PASSWORD@github.com/justinoliver/LightWorks.git"
+    echo -e "${GREEN}✅ Using GitHub credentials for authentication${NC}"
+else
+    echo -e "${YELLOW}⚠️  No GitHub authentication provided. Using public access.${NC}"
+    echo -e "${YELLOW}   For private repos, set GITHUB_TOKEN or GITHUB_USERNAME/GITHUB_PASSWORD${NC}"
+fi
 
 # Function to check if command exists
 command_exists() {
