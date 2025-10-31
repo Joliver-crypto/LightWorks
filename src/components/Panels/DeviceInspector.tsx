@@ -4,11 +4,11 @@ import { Tabs } from '../Common/Tabs'
 import { Input } from '../Common/Input'
 import { Button } from '../Common/Button'
 import { Badge } from '../Common/Badge'
+import { Slider } from '../Common/Slider'
 import { useFileStore } from '../../storage/useFileStore'
 import { useSelectionStore } from '../../state/useSelectionStore'
 import { deviceRegistry, DeviceConfig } from '../../../hardware/deviceRegistry'
 import { executeArduinoCommand, connectToArduino, disconnectFromArduino } from '../../../hardware/arduinoClient'
-import { useExtensionStore } from '../../state/useExtensionStore'
 
 interface DeviceInspectorProps {
   device?: Component
@@ -19,211 +19,120 @@ const tabs = [
   { id: 'properties', label: 'Properties' },
   { id: 'commands', label: 'Commands' },
   { id: 'telemetry', label: 'Telemetry' },
-  { id: 'binding', label: 'Driver' },
+  { id: 'binding', label: 'Binding' },
 ]
 
-// Commands Section Component
-function CommandsSection({ 
-  device, 
-  deviceConfig, 
-  loading,
-  // Jankomotor props
-  jankomotorInputs,
-  setJankomotorInputs,
-  tipTiltInputs,
-  setTipTiltInputs,
-  jankomotorStatus,
-  arduinoConnected,
-  handleArduinoCommand,
-  handleCornerRun,
-  handleTipTiltRun,
-  handleJankomotorZero,
-  handleJankomotorPosition,
-  handleJankomotorStatus,
-  handleJankomotorSafety,
-  handleJankomotorPing,
-  handleJankomotorStop,
-  handleArduinoConnect,
-  handleArduinoDisconnect
-}: { 
-  device?: Component
-  deviceConfig: DeviceConfig | null
-  loading: boolean
-  // Jankomotor props
-  jankomotorInputs?: { cornerA: string, cornerB: string, cornerC: string }
-  setJankomotorInputs?: (inputs: { cornerA: string, cornerB: string, cornerC: string }) => void
-  tipTiltInputs?: { tip: string, tilt: string }
-  setTipTiltInputs?: (inputs: { tip: string, tilt: string }) => void
-  jankomotorStatus?: string
-  arduinoConnected?: boolean
-  handleArduinoCommand?: (command: string) => Promise<void>
-  handleCornerRun?: () => Promise<void>
-  handleTipTiltRun?: () => Promise<void>
-  handleJankomotorZero?: () => Promise<void>
-  handleJankomotorPosition?: () => Promise<void>
-  handleJankomotorStatus?: () => Promise<void>
-  handleJankomotorSafety?: () => Promise<void>
-  handleJankomotorPing?: () => Promise<void>
-  handleJankomotorStop?: () => Promise<void>
-  handleArduinoConnect?: () => Promise<void>
-  handleArduinoDisconnect?: () => Promise<void>
-}) {
-  const { 
-    getAvailableDrivers, 
-    getDriverForDevice, 
-    enableDriver,
-    getExtensionsForHardware,
-    isExtensionInstalled
-  } = useExtensionStore()
-  
-  const deviceType = device?.type || ''
-  const currentDriver = getDriverForDevice(deviceType)
-  const allExtensions = getExtensionsForHardware(deviceType)
-  const availableDrivers = getAvailableDrivers(deviceType)
-  
-  // Get display name for current driver
-  const getDriverDisplayName = (driverId: string | null): string => {
-    if (!driverId) return ''
-    const extension = allExtensions.find(ext => ext.driverId === driverId || ext.name === driverId)
-    return extension?.name || driverId
-  }
-  
-  const handleDriverSelect = (driverId: string) => {
-    enableDriver(deviceType, driverId)
-  }
-  
-  // Check if commands should be shown
-  const shouldShowCommands = () => {
-    // Jankomotor8812 always shows commands (uses Serial Communication)
-    if (deviceType === 'motor.jankomotor.8812') {
-      return true
-    }
-    // DMK37 needs a driver selected
-    if (deviceType === 'camera.dmk37') {
-      return !!currentDriver
-    }
-    // Other devices show commands from device config
-    return !!deviceConfig?.commands && deviceConfig.commands.length > 0
-  }
-  
-  if (loading) {
-    return (
-      <div className="text-center py-8 text-gray-500">
-        <div className="text-4xl mb-2">⏳</div>
-        <p>Loading commands...</p>
-      </div>
-    )
-  }
-  
-  // Jankomotor8812 special handling
-  if (deviceType === 'motor.jankomotor.8812') {
-    return (
-      <JankomotorCommandsSection 
-        device={device}
-        jankomotorInputs={jankomotorInputs || { cornerA: '', cornerB: '', cornerC: '' }}
-        setJankomotorInputs={setJankomotorInputs || (() => {})}
-        tipTiltInputs={tipTiltInputs || { tip: '', tilt: '' }}
-        setTipTiltInputs={setTipTiltInputs || (() => {})}
-        jankomotorStatus={jankomotorStatus || ''}
-        arduinoConnected={arduinoConnected || false}
-        handleArduinoCommand={handleArduinoCommand}
-        handleCornerRun={handleCornerRun}
-        handleTipTiltRun={handleTipTiltRun}
-        handleJankomotorZero={handleJankomotorZero}
-        handleJankomotorPosition={handleJankomotorPosition}
-        handleJankomotorStatus={handleJankomotorStatus}
-        handleJankomotorSafety={handleJankomotorSafety}
-        handleJankomotorPing={handleJankomotorPing}
-        handleJankomotorStop={handleJankomotorStop}
-        handleArduinoConnect={handleArduinoConnect}
-        handleArduinoDisconnect={handleArduinoDisconnect}
-      />
-    )
-  }
-  
-  // DMK37 with driver selection
-  if (deviceType === 'camera.dmk37') {
-    return (
-      <DMK37CommandsSection
-        device={device}
-        deviceConfig={deviceConfig}
-        currentDriver={currentDriver}
-        availableDrivers={availableDrivers}
-        allExtensions={allExtensions}
-        onDriverSelect={handleDriverSelect}
-      />
-    )
-  }
-  
-  // Default commands section
-  if (!shouldShowCommands()) {
-    return (
-      <div className="text-center py-8 text-gray-500">
-        <div className="text-4xl mb-2">⚡</div>
-        <p>No commands available</p>
-        <p className="text-xs mt-2">Select a driver in the Driver tab to enable commands</p>
-      </div>
-    )
-  }
-  
-  return (
-    <div className="space-y-3">
-      <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-gray-500">Software:</span>
-          <span className="text-sm font-medium text-gray-900">Native Driver</span>
-        </div>
-      </div>
-      
-      {deviceConfig?.commands && deviceConfig.commands.length > 0 ? (
-        deviceConfig.commands.map((command, index) => (
-          <div key={index} className="border border-gray-200 rounded-lg p-3">
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="font-medium text-gray-900">{command.label}</h4>
-              <Button size="sm" variant="primary">
-                Execute
-              </Button>
-            </div>
-            <p className="text-sm text-gray-600 mb-2">{command.description}</p>
-            {command.args && command.args.length > 0 && (
-              <div className="space-y-2">
-                <h5 className="text-xs font-medium text-gray-500 uppercase">Parameters</h5>
-                {command.args.map((arg, argIndex) => (
-                  <div key={argIndex} className="flex items-center gap-2">
-                    <Input
-                      type={arg.type === 'number' ? 'number' : 'text'}
-                      placeholder={arg.name}
-                      className="flex-1"
-                      disabled
-                    />
-                    <span className="text-xs text-gray-500">
-                      {arg.required ? 'Required' : 'Optional'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ))
-      ) : (
-        <div className="text-center py-8 text-gray-500">
-          <div className="text-4xl mb-2">⚡</div>
-          <p>No commands available for this device</p>
-        </div>
-      )}
-    </div>
-  )
+// Debug log entry type
+interface DebugLogEntry {
+  timestamp: number
+  level: 'info' | 'warning' | 'error' | 'debug'
+  message: string
+  data?: any
 }
 
 // Live Camera View Component (IC Capture 2.5 style)
 function LiveCameraView({ device }: { device?: Component }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
   const [isAcquiring, setIsAcquiring] = useState(false)
   const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected')
   const [frameRate, setFrameRate] = useState(0)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [cameraInUse, setCameraInUse] = useState(false)
+  const [showDebug, setShowDebug] = useState(false)
+  const [debugLogs, setDebugLogs] = useState<DebugLogEntry[]>([])
+  const [debugInfo, setDebugInfo] = useState<Record<string, any>>({})
   const frameCountRef = useRef(0)
   const lastFrameTimeRef = useRef(Date.now())
   const animationFrameRef = useRef<number | null>(null)
+  const debugLogLimit = 100 // Keep last 100 log entries
+
+  // Camera settings with sliders
+  const [settings, setSettings] = useState({
+    brightness: 50,    // 0-100
+    contrast: 50,     // 0-100
+    exposure: 1000,   // 1-1000000 μs
+    gain: 0,          // 0-100 dB
+    gamma: 50,        // 0-100
+    saturation: 50,   // 0-100
+  })
+
+  // Debug logging function
+  const debugLog = (level: DebugLogEntry['level'], message: string, data?: any) => {
+    const entry: DebugLogEntry = {
+      timestamp: Date.now(),
+      level,
+      message,
+      data
+    }
+    
+    // Log to console
+    const consoleMethod = level === 'error' ? 'error' : level === 'warning' ? 'warn' : 'log'
+    console[consoleMethod](`[Camera Debug ${level.toUpperCase()}]`, message, data || '')
+    
+    // Add to debug logs
+    setDebugLogs(prev => {
+      const newLogs = [...prev, entry]
+      // Keep only last N entries
+      return newLogs.slice(-debugLogLimit)
+    })
+    
+    // Update debug info
+    setDebugInfo(prev => ({
+      ...prev,
+      lastLog: entry,
+      logCount: prev.logCount ? prev.logCount + 1 : 1
+    }))
+  }
+
+  // Update debug info periodically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setDebugInfo(prev => ({
+        ...prev,
+        connectionStatus,
+        isAcquiring,
+        frameRate,
+        cameraInUse,
+        error,
+        canvasSize: canvasRef.current ? {
+          width: canvasRef.current.width,
+          height: canvasRef.current.height
+        } : null,
+        timestamp: Date.now()
+      }))
+    }, 1000)
+    
+    return () => clearInterval(interval)
+  }, [connectionStatus, isAcquiring, frameRate, cameraInUse, error])
+
+  // Handle fullscreen
+  const handleFullscreen = () => {
+    if (!containerRef.current) return
+
+    if (!isFullscreen) {
+      if (containerRef.current.requestFullscreen) {
+        containerRef.current.requestFullscreen()
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen()
+      }
+    }
+  }
+
+  // Listen for fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange)
+    }
+  }, [])
 
   // Poll for frames when acquiring
   useEffect(() => {
@@ -238,8 +147,6 @@ function LiveCameraView({ device }: { device?: Component }) {
     const pollFrames = async () => {
       try {
         // TODO: Replace with actual API call to get camera frames
-        // For now, simulate frame updates
-        // This would connect to the Python backend via Electron IPC or HTTP/WebSocket
         const canvas = canvasRef.current
         if (!canvas) return
 
@@ -247,9 +154,11 @@ function LiveCameraView({ device }: { device?: Component }) {
         if (!ctx) return
 
         // Simulated frame - in real implementation, this would come from camera backend
-        // For now, show a placeholder
         ctx.fillStyle = '#1a1a1a'
         ctx.fillRect(0, 0, canvas.width, canvas.height)
+        
+        // Apply brightness/contrast filters
+        ctx.filter = `brightness(${settings.brightness}%) contrast(${settings.contrast}%)`
         
         // Draw placeholder text
         ctx.fillStyle = '#888'
@@ -263,14 +172,18 @@ function LiveCameraView({ device }: { device?: Component }) {
         const now = Date.now()
         const elapsed = now - lastFrameTimeRef.current
         if (elapsed >= 1000) {
-          setFrameRate(frameCountRef.current)
+          const newFrameRate = frameCountRef.current
+          setFrameRate(newFrameRate)
+          if (newFrameRate > 0) {
+            debugLog('debug', `Frame rate: ${newFrameRate} fps`, { frames: frameCountRef.current, elapsed })
+          }
           frameCountRef.current = 0
           lastFrameTimeRef.current = now
         }
 
         animationFrameRef.current = requestAnimationFrame(pollFrames)
       } catch (error) {
-        console.error('Error polling frames:', error)
+        debugLog('error', 'Error polling frames', { error: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined })
       }
     }
 
@@ -282,602 +195,525 @@ function LiveCameraView({ device }: { device?: Component }) {
         animationFrameRef.current = null
       }
     }
-  }, [isAcquiring, connectionStatus])
+  }, [isAcquiring, connectionStatus, settings])
 
   // Set canvas size
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
 
-    // Set canvas size (adjust based on available space)
-    canvas.width = 640
-    canvas.height = 480
+    const newWidth = isFullscreen ? window.innerWidth : 640
+    const newHeight = isFullscreen ? window.innerHeight : 480
+    
+    debugLog('debug', 'Canvas size changed', { 
+      width: newWidth, 
+      height: newHeight, 
+      fullscreen: isFullscreen 
+    })
+    
+    canvas.width = newWidth
+    canvas.height = newHeight
+  }, [isFullscreen])
+  
+  // Initial debug log
+  useEffect(() => {
+    debugLog('info', 'LiveCameraView component initialized', { device: device?.type })
   }, [])
 
   const handleConnect = async () => {
+    debugLog('info', 'Attempting to connect to camera', { device: device?.type })
+    setError(null)
+    setCameraInUse(false)
     setConnectionStatus('connecting')
-    // TODO: Connect to camera via backend API
-    // For now, simulate connection
-    setTimeout(() => {
-      setConnectionStatus('connected')
-    }, 500)
+    
+    try {
+      // TODO: Connect to camera via backend API
+      // For now, simulate connection with conflict detection
+      // In real implementation, check if camera is already in use
+      
+      debugLog('debug', 'Checking camera availability')
+      
+      // Simulate checking for camera conflicts
+      // This would typically check if IC Capture 2.5 or another app is using the camera
+      const checkCameraAvailability = async () => {
+        debugLog('debug', 'Calling camera availability check API')
+        // TODO: Call backend API to check camera availability
+        // Return { available: boolean, inUseBy?: string }
+        // For now, we'll simulate this
+        const result = { available: true, inUseBy: null }
+        debugLog('debug', 'Camera availability check result', result)
+        return result
+      }
+      
+      const availability = await checkCameraAvailability()
+      
+      if (!availability.available) {
+        debugLog('warning', 'Camera not available', availability)
+        setCameraInUse(true)
+        setConnectionStatus('disconnected')
+        const errorMsg = `Camera is already in use by ${availability.inUseBy || 'another application'} (e.g., IC Capture 2.5). ` +
+          `Please close the other application and try again.`
+        setError(errorMsg)
+        debugLog('error', 'Camera connection failed - already in use', { inUseBy: availability.inUseBy })
+        return
+      }
+      
+      debugLog('info', 'Camera available, attempting connection')
+      
+      // Attempt to connect
+      // TODO: Actual connection call to backend
+      // This might fail with "device already in use" error
+      debugLog('debug', 'Sending connection request to backend')
+      
+      // Simulate connection success
+      setTimeout(() => {
+        debugLog('info', 'Camera connection successful')
+        setConnectionStatus('connected')
+        setDebugInfo(prev => ({
+          ...prev,
+          connectedAt: Date.now(),
+          connectionAttempts: (prev.connectionAttempts || 0) + 1
+        }))
+      }, 500)
+    } catch (err: any) {
+      // Handle connection errors
+      const errorMessage = err?.message || String(err)
+      debugLog('error', 'Connection error', { error: errorMessage, stack: err?.stack })
+      
+      if (errorMessage.includes('already in use') || 
+          errorMessage.includes('device busy') ||
+          errorMessage.includes('access denied') ||
+          errorMessage.includes('exclusive access')) {
+        debugLog('warning', 'Camera in use by another application')
+        setCameraInUse(true)
+        setError(
+          'Camera is already in use by another application (e.g., IC Capture 2.5). ' +
+          'Please close IC Capture 2.5 or any other camera software and try again.'
+        )
+      } else {
+        setError(`Connection failed: ${errorMessage}`)
+      }
+      
+      setConnectionStatus('disconnected')
+      setDebugInfo(prev => ({
+        ...prev,
+        lastError: errorMessage,
+        errorTimestamp: Date.now()
+      }))
+    }
   }
 
   const handleDisconnect = async () => {
+    debugLog('info', 'Disconnecting from camera')
     setIsAcquiring(false)
     setConnectionStatus('disconnected')
+    debugLog('debug', 'Camera disconnected', { wasAcquiring: isAcquiring })
     // TODO: Disconnect from camera
   }
 
   const handleStartAcquisition = async () => {
+    debugLog('info', 'Starting camera acquisition')
+    
+    // Ensure camera is connected first
     if (connectionStatus !== 'connected') {
+      debugLog('debug', 'Camera not connected, attempting connection first')
+      // Attempt connection first
       await handleConnect()
+      
+      // Check if connection failed (camera in use or error)
+      if (cameraInUse || error) {
+        debugLog('warning', 'Cannot start acquisition - connection failed', { cameraInUse, error })
+        return // Don't proceed if connection failed
+      }
+      
+      // Wait a brief moment for connection to establish
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      // Double-check connection status after waiting
+      if (connectionStatus !== 'connected') {
+        debugLog('warning', 'Connection not established after wait')
+        return
+      }
     }
-    setIsAcquiring(true)
-    frameCountRef.current = 0
-    lastFrameTimeRef.current = Date.now()
-    // TODO: Start camera acquisition via backend API
+    
+    setError(null)
+    
+    try {
+      debugLog('debug', 'Setting acquisition state to true')
+      setIsAcquiring(true)
+      frameCountRef.current = 0
+      lastFrameTimeRef.current = Date.now()
+      debugLog('info', 'Acquisition started', { frameCount: frameCountRef.current })
+      
+      // TODO: Start camera acquisition via backend API
+      // This might fail if camera was taken by another app during connection
+      setDebugInfo(prev => ({
+        ...prev,
+        acquisitionStartedAt: Date.now(),
+        acquisitionAttempts: (prev.acquisitionAttempts || 0) + 1
+      }))
+    } catch (err: any) {
+      const errorMessage = err?.message || String(err)
+      debugLog('error', 'Failed to start acquisition', { error: errorMessage, stack: err?.stack })
+      
+      if (errorMessage.includes('already in use') || 
+          errorMessage.includes('device busy') ||
+          errorMessage.includes('access denied') ||
+          errorMessage.includes('exclusive access')) {
+        setCameraInUse(true)
+        setError(
+          'Camera was taken by another application. ' +
+          'Please close IC Capture 2.5 and restart the live view.'
+        )
+      } else {
+        setError(`Failed to start acquisition: ${errorMessage}`)
+      }
+      setIsAcquiring(false)
+    }
   }
 
   const handleStopAcquisition = async () => {
+    debugLog('info', 'Stopping camera acquisition')
     setIsAcquiring(false)
+    debugLog('debug', 'Acquisition stopped', { finalFrameCount: frameCountRef.current })
+    setDebugInfo(prev => ({
+      ...prev,
+      acquisitionStoppedAt: Date.now(),
+      totalFramesAcquired: (prev.totalFramesAcquired || 0) + frameCountRef.current
+    }))
     // TODO: Stop camera acquisition via backend API
   }
 
+  const handleSettingChange = (key: keyof typeof settings, value: number) => {
+    debugLog('debug', `Camera setting changed: ${key}`, { oldValue: settings[key], newValue: value })
+    setSettings(prev => ({ ...prev, [key]: value }))
+    setDebugInfo(prev => ({
+      ...prev,
+      lastSettingChanged: key,
+      lastSettingValue: value,
+      settingsUpdateCount: (prev.settingsUpdateCount || 0) + 1
+    }))
+    // TODO: Send setting to camera backend
+  }
+
+  const clearDebugLogs = () => {
+    debugLog('info', 'Debug logs cleared')
+    setDebugLogs([])
+    setDebugInfo({})
+  }
+
+  const exportDebugLogs = () => {
+    const debugData = {
+      timestamp: Date.now(),
+      device: device?.type,
+      debugInfo,
+      logs: debugLogs,
+      settings,
+      connectionStatus,
+      isAcquiring,
+      frameRate,
+      error
+    }
+    
+    const blob = new Blob([JSON.stringify(debugData, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `camera-debug-${device?.type || 'camera'}-${Date.now()}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+    
+    debugLog('info', 'Debug logs exported', { fileName: a.download })
+  }
+
   return (
-    <div className="border border-gray-200 rounded-lg p-4 bg-gray-900">
-      <div className="flex items-center justify-between mb-3">
-        <h4 className="font-medium text-white text-sm">Live Camera View</h4>
-        <div className="flex items-center gap-2">
-          {connectionStatus === 'connected' && (
-            <Badge variant={isAcquiring ? 'success' : 'default'} className="text-xs">
-              {isAcquiring ? 'Live' : 'Idle'}
-            </Badge>
-          )}
-          {frameRate > 0 && (
-            <span className="text-xs text-gray-400">{frameRate} fps</span>
-          )}
+    <div 
+      ref={containerRef}
+      className={`border border-gray-200 rounded-lg bg-gray-900 ${isFullscreen ? 'fixed inset-0 z-50 rounded-none' : ''}`}
+    >
+      {/* Slider Controls (IC Capture 2.5 style) */}
+      <div className="px-4 py-3 bg-gray-800 border-b border-gray-700">
+        <div className="grid grid-cols-3 gap-4">
+          <Slider
+            label="Brightness"
+            value={settings.brightness}
+            min={0}
+            max={100}
+            step={1}
+            onChange={(value) => handleSettingChange('brightness', value)}
+            disabled={!connectionStatus || connectionStatus === 'disconnected'}
+          />
+          <Slider
+            label="Contrast"
+            value={settings.contrast}
+            min={0}
+            max={100}
+            step={1}
+            onChange={(value) => handleSettingChange('contrast', value)}
+            disabled={!connectionStatus || connectionStatus === 'disconnected'}
+          />
+          <Slider
+            label="Exposure"
+            value={settings.exposure}
+            min={1}
+            max={1000000}
+            step={100}
+            unit="μs"
+            onChange={(value) => handleSettingChange('exposure', value)}
+            disabled={!connectionStatus || connectionStatus === 'disconnected'}
+          />
+          <Slider
+            label="Gain"
+            value={settings.gain}
+            min={0}
+            max={100}
+            step={1}
+            unit="dB"
+            onChange={(value) => handleSettingChange('gain', value)}
+            disabled={!connectionStatus || connectionStatus === 'disconnected'}
+          />
+          <Slider
+            label="Gamma"
+            value={settings.gamma}
+            min={0}
+            max={100}
+            step={1}
+            onChange={(value) => handleSettingChange('gamma', value)}
+            disabled={!connectionStatus || connectionStatus === 'disconnected'}
+          />
+          <Slider
+            label="Saturation"
+            value={settings.saturation}
+            min={0}
+            max={100}
+            step={1}
+            onChange={(value) => handleSettingChange('saturation', value)}
+            disabled={!connectionStatus || connectionStatus === 'disconnected'}
+          />
         </div>
       </div>
-      
-      {/* Canvas for displaying frames */}
-      <div className="relative bg-black rounded overflow-hidden mb-3" style={{ aspectRatio: '4/3' }}>
-        <canvas
-          ref={canvasRef}
-          className="w-full h-full"
-          style={{ display: 'block', imageRendering: 'pixelated' }}
-        />
-        {connectionStatus === 'disconnected' && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
-            <div className="text-center text-gray-500">
-              <div className="text-4xl mb-2">📷</div>
-              <p className="text-sm">Camera Not Connected</p>
-            </div>
-          </div>
-        )}
-        {connectionStatus === 'connecting' && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
-            <div className="text-center text-gray-500">
-              <div className="animate-pulse text-4xl mb-2">⏳</div>
-              <p className="text-sm">Connecting...</p>
-            </div>
-          </div>
-        )}
-      </div>
 
-      {/* Controls */}
-      <div className="flex gap-2">
-        {connectionStatus === 'disconnected' ? (
-          <Button
-            size="sm"
-            variant="primary"
-            onClick={handleConnect}
-            className="flex-1"
-          >
-            Connect Camera
-          </Button>
-        ) : (
-          <>
-            {!isAcquiring ? (
-              <Button
-                size="sm"
-                variant="primary"
-                onClick={handleStartAcquisition}
-                className="flex-1"
-              >
-                Start Live View
-              </Button>
-            ) : (
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={handleStopAcquisition}
-                className="flex-1"
-              >
-                Stop Live View
-              </Button>
+      {/* Canvas and Controls */}
+      <div className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="font-medium text-white text-sm">Live Camera View</h4>
+          <div className="flex items-center gap-2">
+            {connectionStatus === 'connected' && (
+              <Badge variant={isAcquiring ? 'success' : 'default'} className="text-xs">
+                {isAcquiring ? 'Live' : 'Idle'}
+              </Badge>
+            )}
+            {frameRate > 0 && (
+              <span className="text-xs text-gray-400">{frameRate} fps</span>
             )}
             <Button
               size="sm"
               variant="secondary"
-              onClick={handleDisconnect}
+              onClick={() => setShowDebug(!showDebug)}
+              className="text-xs"
             >
-              Disconnect
+              {showDebug ? 'Hide Debug' : 'Debug'}
             </Button>
-          </>
-        )}
-      </div>
-      
-      <p className="text-xs text-gray-400 mt-2">
-        Live view similar to IC Capture 2.5. Connect camera and start acquisition to see frames.
-      </p>
-    </div>
-  )
-}
-
-// DMK37 Commands Section with Driver Selection
-function DMK37CommandsSection({ 
-  device, 
-  deviceConfig,
-  currentDriver,
-  availableDrivers,
-  allExtensions,
-  onDriverSelect
-}: {
-  device?: Component
-  deviceConfig: DeviceConfig | null
-  currentDriver: string | null
-  availableDrivers: any[]
-  allExtensions: any[]
-  onDriverSelect: (driverId: string) => void
-}) {
-  // Get commands from the selected driver extension
-  const getCommandsForDriver = () => {
-    if (!currentDriver) return []
-    
-    const extension = allExtensions.find(ext => ext.driverId === currentDriver || ext.name === currentDriver)
-    if (!extension) return []
-    
-    const deviceDefinition = extension.devices?.find((d: any) => d.kind === 'camera.dmk37')
-    return deviceDefinition?.commands ? Object.entries(deviceDefinition.commands).map(([name, cmd]: [string, any]) => ({
-      name,
-      label: name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-      description: `Execute ${name}`,
-      args: cmd.args || []
-    })) : []
-  }
-  
-  const driverCommands = getCommandsForDriver()
-  const selectedExtension = allExtensions.find(ext => ext.driverId === currentDriver || ext.name === currentDriver)
-  
-  return (
-    <div className="space-y-4">
-      {/* Driver Selection at Top */}
-      <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Driver Software
-        </label>
-        <select
-          value={currentDriver || ''}
-          onChange={(e) => onDriverSelect(e.target.value)}
-          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-brand-500 focus:border-brand-500"
-        >
-          <option value="">-- Select Driver --</option>
-          {availableDrivers.map((driver) => (
-            <option key={driver.driverId || driver.name} value={driver.driverId || driver.name}>
-              {driver.name}
-            </option>
-          ))}
-        </select>
-        {!currentDriver && (
-          <p className="text-xs text-gray-500 mt-2">
-            ⚠️ Select a driver to enable commands. Install drivers from the Extensions page.
-          </p>
-        )}
-      </div>
-      
-      {/* Commands - Only shown if driver selected */}
-      {currentDriver ? (
-        <div className="space-y-3">
-          {/* Software label at top of commands */}
-          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-blue-700">Software:</span>
-              <span className="text-sm font-medium text-blue-900">{selectedExtension?.name || currentDriver}</span>
-              <Badge variant="info" className="text-xs">Active</Badge>
-            </div>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={handleFullscreen}
+              className="text-xs"
+            >
+              {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+            </Button>
           </div>
-          
-          {/* Live Camera View - Only show for IC Capture 2.5 */}
-          {currentDriver === 'ic-capture-2.5' && (
-            <LiveCameraView device={device} />
-          )}
-          
-          {/* Commands from selected driver */}
-          {driverCommands.length > 0 ? (
-            driverCommands.map((command, index) => (
-              <div key={index} className="border border-gray-200 rounded-lg p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium text-gray-900">{command.label}</h4>
-                  <Button size="sm" variant="primary">
-                    Execute
-                  </Button>
-                </div>
-                <p className="text-sm text-gray-600 mb-2">{command.description}</p>
-                {command.args && command.args.length > 0 && (
-                  <div className="space-y-2">
-                    <h5 className="text-xs font-medium text-gray-500 uppercase">Parameters</h5>
-                    {command.args.map((arg: any, argIndex: number) => (
-                      <div key={argIndex} className="flex items-center gap-2">
-                        <Input
-                          type={arg.type === 'number' ? 'number' : 'text'}
-                          placeholder={arg.name}
-                          className="flex-1"
-                        />
-                        <span className="text-xs text-gray-500">
-                          {arg.type}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+        </div>
+
+        {/* Debug Panel */}
+        {showDebug && (
+          <div className="mb-3 p-3 bg-gray-800 border border-gray-700 rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <h5 className="font-medium text-white text-xs">Debug Information</h5>
+              <div className="flex gap-1">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={clearDebugLogs}
+                  className="text-xs"
+                >
+                  Clear Logs
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={exportDebugLogs}
+                  className="text-xs"
+                >
+                  Export
+                </Button>
               </div>
-            ))
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              <div className="text-4xl mb-2">⚡</div>
-              <p>No commands available for selected driver</p>
             </div>
-          )}
-        </div>
-      ) : (
-        <div className="text-center py-8 text-gray-500 border border-gray-200 rounded-lg p-8">
-          <div className="text-4xl mb-2">📷</div>
-          <p className="font-medium">No Driver Selected</p>
-          <p className="text-xs mt-2">
-            Select a driver from the dropdown above to enable camera commands.
-          </p>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// Jankomotor Commands Section (keeping existing functionality)
-function JankomotorCommandsSection({ 
-  device,
-  jankomotorInputs,
-  setJankomotorInputs,
-  tipTiltInputs,
-  setTipTiltInputs,
-  jankomotorStatus,
-  arduinoConnected,
-  handleArduinoCommand,
-  handleCornerRun,
-  handleTipTiltRun,
-  handleJankomotorZero,
-  handleJankomotorPosition,
-  handleJankomotorStatus,
-  handleJankomotorSafety,
-  handleJankomotorPing,
-  handleJankomotorStop,
-  handleArduinoConnect,
-  handleArduinoDisconnect
-}: {
-  device?: Component
-  jankomotorInputs: { cornerA: string, cornerB: string, cornerC: string }
-  setJankomotorInputs: (inputs: { cornerA: string, cornerB: string, cornerC: string }) => void
-  tipTiltInputs: { tip: string, tilt: string }
-  setTipTiltInputs: (inputs: { tip: string, tilt: string }) => void
-  jankomotorStatus: string
-  arduinoConnected: boolean
-  handleArduinoCommand?: (command: string) => Promise<void>
-  handleCornerRun?: () => Promise<void>
-  handleTipTiltRun?: () => Promise<void>
-  handleJankomotorZero?: () => Promise<void>
-  handleJankomotorPosition?: () => Promise<void>
-  handleJankomotorStatus?: () => Promise<void>
-  handleJankomotorSafety?: () => Promise<void>
-  handleJankomotorPing?: () => Promise<void>
-  handleJankomotorStop?: () => Promise<void>
-  handleArduinoConnect?: () => Promise<void>
-  handleArduinoDisconnect?: () => Promise<void>
-}) {
-  return (
-    <div className="space-y-3">
-      {/* Software Label */}
-      <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-gray-500">Software:</span>
-          <span className="text-sm font-medium text-gray-900">Serial Communication (Arduino-based)</span>
-        </div>
-      </div>
-      
-      {/* Status */}
-      {jankomotorStatus && (
-        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-sm text-blue-800">{jankomotorStatus}</p>
-        </div>
-      )}
-      
-      {/* Corner Actuator Controls */}
-      <div className="border border-gray-200 rounded-lg p-3">
-        <h4 className="font-medium text-gray-900 mb-2">Corner Actuator Control</h4>
-        <div className="space-y-2">
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Corner A</label>
-              <Input
-                type="number"
-                placeholder="0"
-                value={jankomotorInputs.cornerA}
-                onChange={(e) => setJankomotorInputs({ ...jankomotorInputs, cornerA: e.target.value })}
-                className="text-center"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Corner B</label>
-              <Input
-                type="number"
-                placeholder="0"
-                value={jankomotorInputs.cornerB}
-                onChange={(e) => setJankomotorInputs({ ...jankomotorInputs, cornerB: e.target.value })}
-                className="text-center"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Corner C</label>
-              <Input
-                type="number"
-                placeholder="0"
-                value={jankomotorInputs.cornerC}
-                onChange={(e) => setJankomotorInputs({ ...jankomotorInputs, cornerC: e.target.value })}
-                className="text-center"
-              />
-            </div>
-          </div>
-          <Button 
-            onClick={handleCornerRun}
-            className="w-full"
-            variant="primary"
-            disabled={!arduinoConnected || !handleCornerRun}
-          >
-            Run Corner Actuators
-          </Button>
-        </div>
-      </div>
-
-      {/* Tip/Tilt Controls */}
-      <div className="border border-gray-200 rounded-lg p-3">
-        <h4 className="font-medium text-gray-900 mb-2">Optical Tip/Tilt Control</h4>
-        <div className="space-y-2">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Tip (X)</label>
-              <Input
-                type="number"
-                step="0.1"
-                placeholder="0.0"
-                value={tipTiltInputs.tip}
-                onChange={(e) => setTipTiltInputs({ ...tipTiltInputs, tip: e.target.value })}
-                className="text-center"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Tilt (Y)</label>
-              <Input
-                type="number"
-                step="0.1"
-                placeholder="0.0"
-                value={tipTiltInputs.tilt}
-                onChange={(e) => setTipTiltInputs({ ...tipTiltInputs, tilt: e.target.value })}
-                className="text-center"
-              />
-            </div>
-          </div>
-          <Button 
-            onClick={handleTipTiltRun}
-            className="w-full"
-            variant="secondary"
-            disabled={!arduinoConnected || !handleTipTiltRun}
-          >
-            Run Tip/Tilt
-          </Button>
-        </div>
-      </div>
-      
-      {/* Connection Controls */}
-      <div className="border border-gray-200 rounded-lg p-3">
-        <h4 className="font-medium text-gray-900 mb-2">Arduino Connection</h4>
-        <div className="flex items-center gap-2 mb-2">
-          <div className={`w-3 h-3 rounded-full ${arduinoConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-          <span className="text-sm text-gray-600">
-            {arduinoConnected ? 'Connected' : 'Disconnected'}
-          </span>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <Button 
-            onClick={handleArduinoConnect} 
-            variant="primary" 
-            size="sm"
-            disabled={arduinoConnected || !handleArduinoConnect}
-          >
-            Connect
-          </Button>
-          <Button 
-            onClick={handleArduinoDisconnect} 
-            variant="secondary" 
-            size="sm"
-            disabled={!arduinoConnected || !handleArduinoDisconnect}
-          >
-            Disconnect
-          </Button>
-        </div>
-      </div>
-
-      {/* System Controls */}
-      <div className="border border-gray-200 rounded-lg p-3">
-        <h4 className="font-medium text-gray-900 mb-2">System Control</h4>
-        <div className="grid grid-cols-2 gap-2">
-          <Button 
-            onClick={handleJankomotorZero} 
-            variant="secondary" 
-            size="sm"
-            disabled={!arduinoConnected || !handleJankomotorZero}
-          >
-            Zero
-          </Button>
-          <Button 
-            onClick={handleJankomotorPosition} 
-            variant="secondary" 
-            size="sm"
-            disabled={!arduinoConnected || !handleJankomotorPosition}
-          >
-            Position
-          </Button>
-          <Button 
-            onClick={handleJankomotorStatus} 
-            variant="secondary" 
-            size="sm"
-            disabled={!arduinoConnected || !handleJankomotorStatus}
-          >
-            Status
-          </Button>
-          <Button 
-            onClick={handleJankomotorSafety} 
-            variant="secondary" 
-            size="sm"
-            disabled={!arduinoConnected || !handleJankomotorSafety}
-          >
-            Safety
-          </Button>
-          <Button 
-            onClick={handleJankomotorPing} 
-            variant="secondary" 
-            size="sm"
-            disabled={!arduinoConnected || !handleJankomotorPing}
-          >
-            Ping
-          </Button>
-          <Button 
-            onClick={handleJankomotorStop} 
-            variant="danger" 
-            size="sm"
-            disabled={!arduinoConnected || !handleJankomotorStop}
-          >
-            Stop
-          </Button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// Driver Selection Component (for Driver tab)
-function DriverSelection({ device, deviceConfig }: { device: Component, deviceConfig: DeviceConfig | null }) {
-  const { 
-    getAvailableDrivers, 
-    getDriverForDevice, 
-    enableDriver,
-    getExtensionsForHardware 
-  } = useExtensionStore()
-  
-  const deviceType = device?.type || ''
-  const availableDrivers = getAvailableDrivers(deviceType)
-  const currentDriver = getDriverForDevice(deviceType)
-  const allExtensions = getExtensionsForHardware(deviceType)
-  
-  const handleDriverSelect = (driverId: string) => {
-    enableDriver(deviceType, driverId)
-  }
-  
-  return (
-    <div className="space-y-4">
-      <div>
-        <h3 className="text-sm font-medium text-gray-700 mb-2">Available Drivers</h3>
-        <p className="text-xs text-gray-500 mb-4">
-          Select a driver extension to use with this hardware. Only installed extensions that support this device are shown.
-        </p>
-      </div>
-      
-      {allExtensions.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">
-          <div className="text-4xl mb-2">📦</div>
-          <p>No compatible extensions found</p>
-          <p className="text-xs mt-2">Install a compatible driver extension from the Extensions page</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {allExtensions.map((ext) => {
-            const isInstalled = availableDrivers.some(d => d.name === ext.name)
-            const isSelected = currentDriver === ext.driverId
             
-            return (
-              <div 
-                key={ext.name} 
-                className={`border rounded-lg p-4 ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h4 className="font-medium text-gray-900">{ext.name}</h4>
-                      <Badge variant={isInstalled ? 'success' : 'default'}>
-                        {isInstalled ? 'Installed' : 'Not Installed'}
-                      </Badge>
-                      {isSelected && (
-                        <Badge variant="info">Active</Badge>
-                      )}
-                    </div>
-                    <p className="text-sm text-gray-600 mb-2">{ext.description}</p>
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      {ext.badges?.map((badge, idx) => (
-                        <Badge key={idx} variant="default" className="text-xs">
-                          {badge}
-                        </Badge>
-                      ))}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      Version: {ext.version} | 
-                      OS: {ext.os.join(', ')}
-                    </div>
-                  </div>
-                  <div className="ml-4">
-                    {isInstalled ? (
-                      <Button
-                        variant={isSelected ? "primary" : "secondary"}
-                        size="sm"
-                        onClick={() => handleDriverSelect(ext.driverId || ext.name)}
-                        disabled={isSelected}
-                      >
-                        {isSelected ? 'Selected' : 'Select Driver'}
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        disabled
-                      >
-                        Install Required
-                      </Button>
+            {/* Debug Info */}
+            <div className="grid grid-cols-2 gap-2 mb-3 text-xs font-mono">
+              <div>
+                <span className="text-gray-400">Status:</span>
+                <span className="ml-2 text-white">{connectionStatus}</span>
+              </div>
+              <div>
+                <span className="text-gray-400">Acquiring:</span>
+                <span className="ml-2 text-white">{isAcquiring ? 'Yes' : 'No'}</span>
+              </div>
+              <div>
+                <span className="text-gray-400">Frame Rate:</span>
+                <span className="ml-2 text-white">{frameRate} fps</span>
+              </div>
+              <div>
+                <span className="text-gray-400">Camera In Use:</span>
+                <span className="ml-2 text-white">{cameraInUse ? 'Yes' : 'No'}</span>
+              </div>
+              <div>
+                <span className="text-gray-400">Canvas:</span>
+                <span className="ml-2 text-white">
+                  {debugInfo.canvasSize ? `${debugInfo.canvasSize.width}x${debugInfo.canvasSize.height}` : 'N/A'}
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-400">Log Count:</span>
+                <span className="ml-2 text-white">{debugInfo.logCount || 0}</span>
+              </div>
+            </div>
+            
+            {/* Debug Logs */}
+            <div className="max-h-48 overflow-y-auto bg-black rounded p-2 text-xs font-mono">
+              {debugLogs.length === 0 ? (
+                <p className="text-gray-500">No debug logs yet</p>
+              ) : (
+                debugLogs.map((log, idx) => (
+                  <div key={idx} className="mb-1 flex items-start gap-2">
+                    <span className="text-gray-500 w-20 shrink-0">
+                      {new Date(log.timestamp).toLocaleTimeString()}
+                    </span>
+                    <span className={`w-16 shrink-0 ${
+                      log.level === 'error' ? 'text-red-400' :
+                      log.level === 'warning' ? 'text-yellow-400' :
+                      log.level === 'info' ? 'text-blue-400' :
+                      'text-gray-400'
+                    }`}>
+                      [{log.level}]
+                    </span>
+                    <span className="text-gray-300 flex-1">{log.message}</span>
+                    {log.data && (
+                      <span className="text-gray-500">({JSON.stringify(log.data).substring(0, 50)})</span>
                     )}
                   </div>
-                </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+        
+        {/* Canvas for displaying frames */}
+        <div className="relative bg-black rounded overflow-hidden mb-3" style={{ aspectRatio: isFullscreen ? 'auto' : '4/3', minHeight: isFullscreen ? 'calc(100vh - 200px)' : 'auto' }}>
+          <canvas
+            ref={canvasRef}
+            className={`w-full ${isFullscreen ? 'h-full' : ''}`}
+            style={{ display: 'block', imageRendering: 'pixelated' }}
+          />
+          {connectionStatus === 'disconnected' && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
+              <div className="text-center text-gray-500">
+                <div className="text-4xl mb-2">📷</div>
+                <p className="text-sm">Camera Not Connected</p>
               </div>
-            )
-          })}
+            </div>
+          )}
+          {connectionStatus === 'connecting' && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
+              <div className="text-center text-gray-500">
+                <div className="animate-pulse text-4xl mb-2">⏳</div>
+                <p className="text-sm">Connecting...</p>
+              </div>
+            </div>
+          )}
         </div>
-      )}
-      
-      {currentDriver && (
-        <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-          <p className="text-sm text-green-800">
-            <strong>Active Driver:</strong> {currentDriver}
+
+        {/* Error Message */}
+        {error && (
+          <div className={`mb-3 p-3 rounded-lg border ${
+            cameraInUse 
+              ? 'bg-yellow-900/20 border-yellow-600 text-yellow-200' 
+              : 'bg-red-900/20 border-red-600 text-red-200'
+          }`}>
+            <div className="flex items-start gap-2">
+              <span className="text-lg">{cameraInUse ? '⚠️' : '❌'}</span>
+              <div className="flex-1">
+                <p className="text-sm font-medium mb-1">
+                  {cameraInUse ? 'Camera In Use' : 'Connection Error'}
+                </p>
+                <p className="text-xs">{error}</p>
+                {cameraInUse && (
+                  <p className="text-xs mt-2 opacity-75">
+                    <strong>Note:</strong> Cameras typically can only be accessed by one application at a time. 
+                    Close IC Capture 2.5 or any other camera software before using the live view.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Controls */}
+        <div className="flex gap-2">
+          {connectionStatus === 'disconnected' ? (
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={handleConnect}
+              className="flex-1"
+              disabled={cameraInUse}
+            >
+              Connect Camera
+            </Button>
+          ) : (
+            <>
+              {!isAcquiring ? (
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onClick={handleStartAcquisition}
+                  className="flex-1"
+                  disabled={cameraInUse}
+                >
+                  Start Live View
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={handleStopAcquisition}
+                  className="flex-1"
+                >
+                  Stop Live View
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={handleDisconnect}
+              >
+                Disconnect
+              </Button>
+            </>
+          )}
+        </div>
+        
+        <div className="mt-2 space-y-1">
+          <p className="text-xs text-gray-400">
+            Live view similar to IC Capture 2.5. Use sliders to adjust camera settings.
           </p>
-          <p className="text-xs text-green-700 mt-1">
-            Commands in this device will use the selected driver extension.
+          <p className="text-xs text-gray-500">
+            <strong>Important:</strong> Close IC Capture 2.5 before using this live view. 
+            Only one application can access the camera at a time.
           </p>
         </div>
-      )}
+      </div>
     </div>
   )
 }
@@ -1514,28 +1350,254 @@ export function DeviceInspector({ device }: DeviceInspectorProps) {
         )}
 
         {activeTab === 'commands' && (
-          <CommandsSection 
-            device={device} 
-            deviceConfig={deviceConfig} 
-            loading={loading}
-            jankomotorInputs={jankomotorInputs}
-            setJankomotorInputs={setJankomotorInputs}
-            tipTiltInputs={tipTiltInputs}
-            setTipTiltInputs={setTipTiltInputs}
-            jankomotorStatus={jankomotorStatus}
-            arduinoConnected={arduinoConnected}
-            handleArduinoCommand={handleArduinoCommand}
-            handleCornerRun={handleCornerRun}
-            handleTipTiltRun={handleTipTiltRun}
-            handleJankomotorZero={handleJankomotorZero}
-            handleJankomotorPosition={handleJankomotorPosition}
-            handleJankomotorStatus={handleJankomotorStatus}
-            handleJankomotorSafety={handleJankomotorSafety}
-            handleJankomotorPing={handleJankomotorPing}
-            handleJankomotorStop={handleJankomotorStop}
-            handleArduinoConnect={handleArduinoConnect}
-            handleArduinoDisconnect={handleArduinoDisconnect}
-          />
+          <div>
+            {loading ? (
+              <div className="text-center py-8 text-gray-500">
+                <div className="text-4xl mb-2">⏳</div>
+                <p>Loading commands...</p>
+              </div>
+            ) : (device?.type as any) === 'camera.dmk37' ? (
+              // DMK37 Camera with Live View
+              <LiveCameraView device={device} />
+            ) : (device?.type as any) === 'motor.jankomotor.8812' ? (
+              // Special Jankomotor8812 interface
+              <div className="space-y-3">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Jankomotor 8812 Control</h3>
+                
+                {/* Status */}
+                {jankomotorStatus && (
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-800">{jankomotorStatus}</p>
+                  </div>
+                )}
+                
+                {/* Corner Actuator Controls */}
+                <div className="border border-gray-200 rounded-lg p-3">
+                  <h4 className="font-medium text-gray-900 mb-2">Corner Actuator Control</h4>
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Corner A</label>
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          value={jankomotorInputs.cornerA}
+                          onChange={(e) => setJankomotorInputs(prev => ({ ...prev, cornerA: e.target.value }))}
+                          className="text-center"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Corner B</label>
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          value={jankomotorInputs.cornerB}
+                          onChange={(e) => setJankomotorInputs(prev => ({ ...prev, cornerB: e.target.value }))}
+                          className="text-center"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Corner C</label>
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          value={jankomotorInputs.cornerC}
+                          onChange={(e) => setJankomotorInputs(prev => ({ ...prev, cornerC: e.target.value }))}
+                          className="text-center"
+                        />
+                      </div>
+                    </div>
+                    <Button 
+                      onClick={handleCornerRun}
+                      className="w-full"
+                      variant="primary"
+                      disabled={!arduinoConnected}
+                    >
+                      Run Corner Actuators
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Tip/Tilt Controls */}
+                <div className="border border-gray-200 rounded-lg p-3">
+                  <h4 className="font-medium text-gray-900 mb-2">Optical Tip/Tilt Control</h4>
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Tip (X)</label>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          placeholder="0.0"
+                          value={tipTiltInputs.tip}
+                          onChange={(e) => setTipTiltInputs(prev => ({ ...prev, tip: e.target.value }))}
+                          className="text-center"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Tilt (Y)</label>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          placeholder="0.0"
+                          value={tipTiltInputs.tilt}
+                          onChange={(e) => setTipTiltInputs(prev => ({ ...prev, tilt: e.target.value }))}
+                          className="text-center"
+                        />
+                      </div>
+                    </div>
+                    <Button 
+                      onClick={handleTipTiltRun}
+                      className="w-full"
+                      variant="secondary"
+                      disabled={!arduinoConnected}
+                    >
+                      Run Tip/Tilt
+                    </Button>
+                  </div>
+                </div>
+                
+                {/* Connection Controls */}
+                <div className="border border-gray-200 rounded-lg p-3">
+                  <h4 className="font-medium text-gray-900 mb-2">Arduino Connection</h4>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`w-3 h-3 rounded-full ${arduinoConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                    <span className="text-sm text-gray-600">
+                      {arduinoConnected ? 'Connected' : 'Disconnected'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button 
+                      onClick={handleArduinoConnect} 
+                      variant="primary" 
+                      size="sm"
+                      disabled={arduinoConnected}
+                    >
+                      Connect
+                    </Button>
+                    <Button 
+                      onClick={handleArduinoDisconnect} 
+                      variant="secondary" 
+                      size="sm"
+                      disabled={!arduinoConnected}
+                    >
+                      Disconnect
+                    </Button>
+                  </div>
+                </div>
+
+                {/* System Controls */}
+                <div className="border border-gray-200 rounded-lg p-3">
+                  <h4 className="font-medium text-gray-900 mb-2">System Control</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button 
+                      onClick={handleJankomotorZero} 
+                      variant="secondary" 
+                      size="sm"
+                      disabled={!arduinoConnected}
+                    >
+                      Zero
+                    </Button>
+                    <Button 
+                      onClick={handleJankomotorPosition} 
+                      variant="secondary" 
+                      size="sm"
+                      disabled={!arduinoConnected}
+                    >
+                      Position
+                    </Button>
+                    <Button 
+                      onClick={handleJankomotorStatus} 
+                      variant="secondary" 
+                      size="sm"
+                      disabled={!arduinoConnected}
+                    >
+                      Status
+                    </Button>
+                    <Button 
+                      onClick={handleJankomotorSafety} 
+                      variant="secondary" 
+                      size="sm"
+                      disabled={!arduinoConnected}
+                    >
+                      Safety
+                    </Button>
+                    <Button 
+                      onClick={handleJankomotorPing} 
+                      variant="secondary" 
+                      size="sm"
+                      disabled={!arduinoConnected}
+                    >
+                      Ping
+                    </Button>
+                    <Button 
+                      onClick={handleJankomotorStop} 
+                      variant="danger" 
+                      size="sm"
+                      disabled={!arduinoConnected}
+                    >
+                      Stop
+                    </Button>
+                  </div>
+                </div>
+                
+                {/* Instructions */}
+                <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded-lg">
+                  <p><strong>Instructions:</strong></p>
+                  <ul className="mt-1 space-y-0.5">
+                    <li><strong>1. Connect:</strong> Click "Connect" to establish Arduino connection</li>
+                    <li><strong>2. Corner Actuators:</strong> Direct control of A, B, C corner screws</li>
+                    <li>• Enter step values for each corner (positive/negative)</li>
+                    <li>• Each corner independently extends/retracts its actuator</li>
+                    <li><strong>3. Tip/Tilt:</strong> Optical alignment control (mapped to corners)</li>
+                    <li>• Enter tip/tilt values in degrees or arcseconds</li>
+                    <li>• Software maps these to appropriate corner movements</li>
+                    <li><strong>4. System:</strong> Use Zero, Position, Status, Safety, Ping, Stop as needed</li>
+                    <li><strong>5. Disconnect:</strong> Click "Disconnect" when done</li>
+                    <li><strong>Note:</strong> No enable required - system is always ready to move</li>
+                  </ul>
+                </div>
+              </div>
+            ) : deviceConfig?.commands && deviceConfig.commands.length > 0 ? (
+              <div className="space-y-3">
+                <h3 className="text-sm font-medium text-gray-700 mb-3">Available Commands</h3>
+                {deviceConfig.commands.map((command, index) => (
+                  <div key={index} className="border border-gray-200 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium text-gray-900">{command.label}</h4>
+                      <Button size="sm" variant="primary">
+                        Execute
+                      </Button>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-2">{command.description}</p>
+                    {command.args && command.args.length > 0 && (
+                      <div className="space-y-2">
+                        <h5 className="text-xs font-medium text-gray-500 uppercase">Parameters</h5>
+                        {command.args.map((arg, argIndex) => (
+                          <div key={argIndex} className="flex items-center gap-2">
+                            <Input
+                              type={arg.type === 'number' ? 'number' : 'text'}
+                              placeholder={arg.name}
+                              className="flex-1"
+                              disabled
+                            />
+                            <span className="text-xs text-gray-500">
+                              {arg.required ? 'Required' : 'Optional'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <div className="text-4xl mb-2">⚡</div>
+                <p>No commands available for this device</p>
+              </div>
+            )}
+          </div>
         )}
 
         {activeTab === 'telemetry' && (
@@ -1577,7 +1639,10 @@ export function DeviceInspector({ device }: DeviceInspectorProps) {
         )}
 
         {activeTab === 'binding' && (
-          <DriverSelection device={device} deviceConfig={deviceConfig} />
+          <div className="text-center py-8 text-gray-500">
+            <div className="text-4xl mb-2">🔗</div>
+            <p>Binding not implemented yet</p>
+          </div>
         )}
       </div>
     </div>
