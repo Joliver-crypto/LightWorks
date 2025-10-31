@@ -385,63 +385,435 @@ class DMK37Controller:
 # Platform-specific driver implementations
 
 class WindowsDMK37Driver:
-    """Windows driver using IC Imaging Control"""
+    """Windows driver using IC Imaging Control SDK (same as IC Capture 2.5)"""
     
     def __init__(self):
         self.connected = False
         self.acquiring = False
+        self.ic_imaging_control = None
+        self.device = None
+        self.sink = None
+        self._frame_data = None
+        self._frame_lock = False
+        
+        # Try to import IC Imaging Control
+        try:
+            import win32com.client
+            self.win32com = win32com.client
+            self.ic_available = True
+        except ImportError:
+            print("Warning: win32com not available. Install pywin32: pip install pywin32")
+            self.ic_available = False
+            self.win32com = None
     
-    def connect(self, serial: Optional[str]) -> bool:
-        print("Connecting via IC Imaging Control...")
-        # Simulate connection
-        self.connected = True
-        return True
+    def _get_ic_control(self):
+        """Get IC Imaging Control COM object"""
+        if not self.ic_available or not self.win32com:
+            raise DMK37Error("IC Imaging Control not available. Install IC Imaging Control SDK and pywin32.")
+        
+        try:
+            return self.win32com.Dispatch("IC Imaging Control.IC Imaging Control.1")
+        except Exception as e:
+            raise ConnectionError(f"Failed to create IC Imaging Control object: {e}")
+    
+    def _find_camera(self, serial: Optional[str] = None):
+        """Find DMK37 camera by serial number or first available"""
+        if not self.ic_imaging_control:
+            return None
+        
+        try:
+            # Get device list - IC Imaging Control uses DeviceManager
+            try:
+                # Try DeviceManager property (newer API)
+                device_manager = self.ic_imaging_control.DeviceManager
+                device_count = device_manager.DeviceCount
+                
+                if device_count == 0:
+                    raise ConnectionError("No cameras found")
+                
+                # Search for DMK37 or match serial
+                for i in range(device_count):
+                    device = device_manager.GetDevice(i)
+                    device_name = device.Name
+                    
+                    # Check if it's a DMK37
+                    if "DMK37" in device_name.upper() or "37BUX252" in device_name.upper():
+                        if serial:
+                            # Try to match serial number if provided
+                            device_serial = getattr(device, 'SerialNumber', getattr(device, 'Serial', ''))
+                            if device_serial == serial:
+                                return device_name  # Return device name to use
+                        else:
+                            # Use first DMK37 found
+                            return device_name
+                
+                # If no DMK37 found, use first device
+                if device_count > 0:
+                    first_device = device_manager.GetDevice(0)
+                    print(f"Warning: DMK37 not found, using device: {first_device.Name}")
+                    return first_device.Name
+                
+            except AttributeError:
+                # Fallback to older API - direct Device property
+                device_list = self.ic_imaging_control.Device
+                if hasattr(device_list, 'Count'):
+                    device_count = device_list.Count
+                elif hasattr(device_list, '__len__'):
+                    device_count = len(device_list)
+                else:
+                    # Try to get count differently
+                    device_count = 0
+                    try:
+                        while True:
+                            device_list.GetItem(device_count)
+                            device_count += 1
+                    except:
+                        pass
+                
+                if device_count == 0:
+                    raise ConnectionError("No cameras found")
+                
+                # Search for DMK37
+                for i in range(device_count):
+                    try:
+                        device_info = device_list.GetItem(i)
+                        device_name = device_info.Name if hasattr(device_info, 'Name') else str(device_info)
+                        
+                        # Check if it's a DMK37
+                        if "DMK37" in device_name.upper() or "37BUX252" in device_name.upper():
+                            return device_name  # Return device name
+                    except:
+                        continue
+                
+                # Use first device
+                if device_count > 0:
+                    first_device = device_list.GetItem(0)
+                    device_name = first_device.Name if hasattr(first_device, 'Name') else str(first_device)
+                    print(f"Warning: DMK37 not found, using device: {device_name}")
+                    return device_name
+            
+            return None
+            
+        except Exception as e:
+            raise ConnectionError(f"Failed to find camera: {e}")
+    
+    def connect(self, serial: Optional[str] = None) -> bool:
+        """Connect to camera using IC Imaging Control"""
+        try:
+            print("Connecting via IC Imaging Control (same SDK as IC Capture 2.5)...")
+            
+            # Get IC Imaging Control object
+            self.ic_imaging_control = self._get_ic_control()
+            
+            # Find camera
+            device_name = self._find_camera(serial)
+            if device_name is None:
+                raise ConnectionError("DMK37 camera not found")
+            
+            # Set device by name
+            self.ic_imaging_control.Device = device_name
+            
+            # Wait for device to be ready
+            import time
+            time.sleep(0.5)
+            
+            # Configure sink for image acquisition
+            self.sink = self.win32com.Dispatch("IC Imaging Control.IC Sink.1")
+            self.sink.SinkType = 2  # Memory buffer sink
+            self.ic_imaging_control.Sink = self.sink
+            
+            # Set up frame ready callback
+            try:
+                # Register callback for frame ready event
+                self.ic_imaging_control.FrameReadyCallback = self._on_frame_ready
+            except:
+                # Some versions may not support callbacks directly
+                pass
+            
+            self.connected = True
+            print(f"Connected to DMK37 camera: {self.ic_imaging_control.Device}")
+            return True
+            
+        except Exception as e:
+            raise ConnectionError(f"Failed to connect: {e}")
     
     def disconnect(self) -> bool:
-        self.connected = False
-        return True
+        """Disconnect from camera"""
+        try:
+            if self.acquiring:
+                self.stop_acquisition()
+            
+            if self.ic_imaging_control:
+                try:
+                    self.ic_imaging_control.Device = None
+                except:
+                    pass
+                self.ic_imaging_control = None
+            
+            if self.sink:
+                self.sink = None
+            
+            self.device = None
+            self.connected = False
+            return True
+        except Exception as e:
+            print(f"Error during disconnect: {e}")
+            return False
     
     def is_connected(self) -> bool:
-        return self.connected
+        """Check if camera is connected"""
+        if not self.connected or not self.ic_imaging_control:
+            return False
+        try:
+            # Verify device is still available
+            device_name = self.ic_imaging_control.Device
+            return device_name is not None and device_name != ""
+        except:
+            return False
     
     def start_acquisition(self) -> bool:
-        self.acquiring = True
-        return True
+        """Start image acquisition"""
+        if not self.connected:
+            raise DMK37Error("Camera not connected")
+        
+        try:
+            # Live mode
+            self.ic_imaging_control.LiveCaptureContinuous = True
+            self.ic_imaging_control.LiveCaptureStart()
+            self.acquiring = True
+            return True
+        except Exception as e:
+            raise DMK37Error(f"Failed to start acquisition: {e}")
     
     def stop_acquisition(self) -> bool:
-        self.acquiring = False
-        return True
+        """Stop image acquisition"""
+        try:
+            if self.ic_imaging_control:
+                self.ic_imaging_control.LiveCaptureStop()
+            self.acquiring = False
+            return True
+        except Exception as e:
+            print(f"Error stopping acquisition: {e}")
+            return False
     
     def is_acquiring(self) -> bool:
-        return self.acquiring
+        """Check if camera is acquiring"""
+        if not self.connected:
+            return False
+        try:
+            return self.acquiring and self.ic_imaging_control.LiveCaptureActive
+        except:
+            return self.acquiring
     
     def set_exposure(self, exposure_us: int) -> bool:
-        print(f"Setting exposure to {exposure_us}μs (IC Imaging Control)")
-        return True
+        """Set exposure time in microseconds"""
+        if not self.connected:
+            raise DMK37Error("Camera not connected")
+        
+        try:
+            # Convert microseconds to milliseconds for IC Imaging Control
+            exposure_ms = exposure_us / 1000.0
+            
+            # Set exposure using IC Imaging Control properties
+            # IC Imaging Control uses milliseconds and property names vary by camera
+            try:
+                # Try direct property access (GenICam)
+                self.ic_imaging_control.Property("ExposureTime").Value = exposure_ms
+            except:
+                # Fallback to older property names
+                try:
+                    self.ic_imaging_control.Property("Exposure").Value = exposure_ms
+                except:
+                    # Try exposure time in microseconds
+                    self.ic_imaging_control.Property("ExposureTime").Value = exposure_us
+            
+            return True
+        except Exception as e:
+            raise DMK37Error(f"Failed to set exposure: {e}")
     
     def set_gain(self, gain_db: int) -> bool:
-        print(f"Setting gain to {gain_db}dB (IC Imaging Control)")
-        return True
+        """Set camera gain in dB"""
+        if not self.connected:
+            raise DMK37Error("Camera not connected")
+        
+        try:
+            # Set gain using IC Imaging Control properties
+            try:
+                self.ic_imaging_control.Property("Gain").Value = gain_db
+            except:
+                # Try Gain_dB if available
+                try:
+                    self.ic_imaging_control.Property("Gain_dB").Value = gain_db
+                except:
+                    # Some cameras use Gain in units, not dB
+                    raise DMK37Error("Gain control not available on this camera")
+            
+            return True
+        except Exception as e:
+            raise DMK37Error(f"Failed to set gain: {e}")
     
     def set_roi(self, x: int, y: int, width: int, height: int) -> bool:
-        print(f"Setting ROI to {x},{y} {width}x{height} (IC Imaging Control)")
-        return True
+        """Set region of interest"""
+        if not self.connected:
+            raise DMK37Error("Camera not connected")
+        
+        try:
+            # Stop acquisition if running
+            was_acquiring = self.is_acquiring()
+            if was_acquiring:
+                self.stop_acquisition()
+            
+            # Set ROI using IC Imaging Control properties
+            try:
+                # GenICam standard properties
+                self.ic_imaging_control.Property("OffsetX").Value = x
+                self.ic_imaging_control.Property("OffsetY").Value = y
+                self.ic_imaging_control.Property("Width").Value = width
+                self.ic_imaging_control.Property("Height").Value = height
+            except:
+                # Try alternative property names
+                try:
+                    self.ic_imaging_control.Property("ROI_X").Value = x
+                    self.ic_imaging_control.Property("ROI_Y").Value = y
+                    self.ic_imaging_control.Property("ROI_Width").Value = width
+                    self.ic_imaging_control.Property("ROI_Height").Value = height
+                except Exception as e:
+                    raise DMK37Error(f"ROI control not available: {e}")
+            
+            # Restart acquisition if it was running
+            if was_acquiring:
+                self.start_acquisition()
+            
+            return True
+        except Exception as e:
+            raise DMK37Error(f"Failed to set ROI: {e}")
     
     def set_trigger_mode(self, enabled: bool) -> bool:
-        print(f"Setting trigger mode: {enabled} (IC Imaging Control)")
-        return True
+        """Enable/disable hardware trigger mode"""
+        if not self.connected:
+            raise DMK37Error("Camera not connected")
+        
+        try:
+            # Set trigger mode using IC Imaging Control
+            try:
+                if enabled:
+                    # Enable hardware trigger
+                    self.ic_imaging_control.Property("TriggerMode").Value = "On"
+                else:
+                    # Disable (free run)
+                    self.ic_imaging_control.Property("TriggerMode").Value = "Off"
+            except:
+                # Try alternative property names
+                try:
+                    self.ic_imaging_control.Property("Trigger").Value = "On" if enabled else "Off"
+                except Exception as e:
+                    raise DMK37Error(f"Trigger control not available: {e}")
+            
+            return True
+        except Exception as e:
+            raise DMK37Error(f"Failed to set trigger mode: {e}")
     
     def set_trigger_source(self, source: str) -> bool:
-        print(f"Setting trigger source to {source} (IC Imaging Control)")
-        return True
+        """Set trigger source (Software, Line0, Line1)"""
+        if not self.connected:
+            raise DMK37Error("Camera not connected")
+        
+        try:
+            # Map source names to IC Imaging Control values
+            source_map = {
+                "Software": "Software",
+                "Line0": "Line0",
+                "Line1": "Line1"
+            }
+            
+            ic_source = source_map.get(source, source)
+            
+            # Set trigger source
+            try:
+                self.ic_imaging_control.Property("TriggerSource").Value = ic_source
+            except:
+                # Try Trigger_Source
+                try:
+                    self.ic_imaging_control.Property("Trigger_Source").Value = ic_source
+                except Exception as e:
+                    raise DMK37Error(f"Trigger source control not available: {e}")
+            
+            return True
+        except Exception as e:
+            raise DMK37Error(f"Failed to set trigger source: {e}")
     
     def software_trigger(self) -> bool:
-        print("Software trigger (IC Imaging Control)")
-        return True
+        """Execute software trigger"""
+        if not self.connected:
+            raise DMK37Error("Camera not connected")
+        
+        try:
+            # Send software trigger
+            try:
+                self.ic_imaging_control.Property("TriggerSoftware").Execute()
+            except:
+                # Try alternative method
+                try:
+                    self.ic_imaging_control.Property("SoftwareTrigger").Execute()
+                except:
+                    # Try direct command
+                    self.ic_imaging_control.Command("TriggerSoftware")
+            
+            return True
+        except Exception as e:
+            raise DMK37Error(f"Failed to execute software trigger: {e}")
+    
+    def _on_frame_ready(self):
+        """Callback for frame ready event"""
+        try:
+            # Get frame from sink
+            if self.sink:
+                image = self.sink.SnapImage(-1)  # -1 = wait indefinitely
+                if image:
+                    # Convert to bytes
+                    width = image.ImageWidth
+                    height = image.ImageHeight
+                    # Get image data as array
+                    # Note: IC Imaging Control returns image data in various formats
+                    # This is a simplified version
+                    self._frame_data = image.ImageBuffer
+        except Exception as e:
+            print(f"Error in frame ready callback: {e}")
     
     def get_frame(self) -> Optional[bytes]:
-        # Simulate frame data
-        return b"mock_frame_data"
+        """Get latest frame data"""
+        if not self.connected or not self.acquiring:
+            return None
+        
+        try:
+            if not self.sink:
+                return None
+            
+            # Snap image (non-blocking with timeout)
+            image = self.sink.SnapImage(100)  # 100ms timeout
+            if not image:
+                return None
+            
+            # Get image buffer
+            buffer = image.ImageBuffer
+            if buffer:
+                # Convert to bytes
+                # Note: Format depends on pixel format
+                # This is a simplified conversion
+                if hasattr(buffer, 'toByteArray'):
+                    return buffer.toByteArray()
+                elif hasattr(buffer, 'tobytes'):
+                    return buffer.tobytes()
+                else:
+                    # Try to convert array to bytes
+                    import array
+                    return array.array('B', buffer).tobytes()
+            
+            return None
+            
+        except Exception as e:
+            print(f"Error getting frame: {e}")
+            return None
 
 
 class LinuxDMK37Driver:

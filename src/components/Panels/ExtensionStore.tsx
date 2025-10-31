@@ -1,15 +1,37 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { MOCK_EXTENSIONS } from '../../models/extensions'
 import { Input } from '../Common/Input'
 import { Button } from '../Common/Button'
 import { Badge } from '../Common/Badge'
+import { useExtensionStore } from '../../state/useExtensionStore'
+import { detectPlatform, isExtensionCompatible, getPlatformName } from '../../utils/platform'
+import type { ExtensionManifest } from '../../models/extensions'
+import type { Platform } from '../../utils/platform'
 // import { clsx } from 'clsx'
 
 export function ExtensionStore() {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterType, setFilterType] = useState<'all' | 'driver' | 'analysis' | 'workflow'>('all')
   const [filterOs, setFilterOs] = useState<'all' | 'windows' | 'linux' | 'mac'>('all')
-  const [installing, setInstalling] = useState<string | null>(null)
+  const [currentPlatform, setCurrentPlatform] = useState<Platform>('unknown')
+  const [showIncompatible, setShowIncompatible] = useState(false)
+  
+  const { 
+    getExtensionStatus, 
+    installExtension, 
+    uninstallExtension, 
+    isExtensionInstalled 
+  } = useExtensionStore()
+
+  // Detect current platform on mount
+  useEffect(() => {
+    const platform = detectPlatform()
+    setCurrentPlatform(platform)
+    // Auto-filter to current platform by default
+    if (platform !== 'unknown') {
+      setFilterOs(platform)
+    }
+  }, [])
 
   const filteredExtensions = MOCK_EXTENSIONS.filter(extension => {
     const matchesSearch = extension.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -17,14 +39,41 @@ export function ExtensionStore() {
     const matchesType = filterType === 'all' || extension.type.includes(filterType)
     const matchesOs = filterOs === 'all' || extension.os.includes(filterOs)
     
+    // Filter out incompatible extensions unless user explicitly wants to see them
+    const isCompatible = isExtensionCompatible(extension, currentPlatform)
+    if (!showIncompatible && !isCompatible) return false
+    
     return matchesSearch && matchesType && matchesOs
   })
 
-  const handleInstall = async (extensionName: string) => {
-    setInstalling(extensionName)
-    // Simulate installation
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    setInstalling(null)
+  const handleInstall = async (extension: ExtensionManifest) => {
+    // Check compatibility before installing
+    const isCompatible = isExtensionCompatible(extension, currentPlatform)
+    
+    if (!isCompatible && currentPlatform !== 'unknown') {
+      const platformName = getPlatformName(currentPlatform)
+      const supportedOS = extension.os.map(os => getPlatformName(os)).join(', ')
+      const confirmed = window.confirm(
+        `⚠️ This extension is not compatible with ${platformName}.\n\n` +
+        `Supported platforms: ${supportedOS}\n\n` +
+        `Are you sure you want to install it anyway? It may not work correctly.`
+      )
+      
+      if (!confirmed) {
+        return
+      }
+    }
+    
+    const success = await installExtension(extension.name)
+    if (success) {
+      console.log(`Extension ${extension.name} installed successfully`)
+    } else {
+      console.error(`Failed to install extension ${extension.name}`)
+    }
+  }
+
+  const handleUninstall = async (extensionName: string) => {
+    await uninstallExtension(extensionName)
   }
 
   const getOsIcon = (os: string) => {
@@ -55,7 +104,7 @@ export function ExtensionStore() {
           onChange={(e) => setSearchQuery(e.target.value)}
         />
         
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 items-center">
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value as any)}
@@ -77,6 +126,18 @@ export function ExtensionStore() {
             <option value="linux">Linux</option>
             <option value="mac">macOS</option>
           </select>
+          
+          {currentPlatform !== 'unknown' && (
+            <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showIncompatible}
+                onChange={(e) => setShowIncompatible(e.target.checked)}
+                className="rounded border-gray-300"
+              />
+              Show incompatible ({getPlatformName(currentPlatform)})
+            </label>
+          )}
         </div>
       </div>
 
@@ -133,14 +194,47 @@ export function ExtensionStore() {
                   </div>
                   
                   <div className="ml-4 flex-shrink-0">
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => handleInstall(extension.name)}
-                      disabled={installing === extension.name}
-                    >
-                      {installing === extension.name ? 'Installing...' : 'Install'}
-                    </Button>
+                    {isExtensionInstalled(extension.name) ? (
+                      <div className="flex flex-col gap-2">
+                        <Badge variant="success" className="text-xs">
+                          Installed
+                        </Badge>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => handleUninstall(extension.name)}
+                        >
+                          Uninstall
+                        </Button>
+                      </div>
+                    ) : (
+                      (() => {
+                        const isCompatible = isExtensionCompatible(extension, currentPlatform)
+                        const isInstalling = getExtensionStatus(extension.name) === 'installing'
+                        const hasError = getExtensionStatus(extension.name) === 'error'
+                        
+                        return (
+                          <div className="flex flex-col gap-2 items-end">
+                            {!isCompatible && currentPlatform !== 'unknown' && (
+                              <Badge variant="warning" className="text-xs">
+                                Not for {getPlatformName(currentPlatform)}
+                              </Badge>
+                            )}
+                            <Button
+                              variant={isCompatible ? "primary" : "secondary"}
+                              size="sm"
+                              onClick={() => handleInstall(extension)}
+                              disabled={isInstalling}
+                              title={!isCompatible ? `This extension is not compatible with ${getPlatformName(currentPlatform)}` : undefined}
+                            >
+                              {isInstalling ? 'Installing...' : 
+                               hasError ? 'Retry' : 
+                               'Install'}
+                            </Button>
+                          </div>
+                        )
+                      })()
+                    )}
                   </div>
                 </div>
               </div>

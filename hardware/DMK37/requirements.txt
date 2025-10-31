@@ -1,0 +1,18 @@
+# DMK37 Camera Controller Requirements
+# Platform-specific dependencies are detected and used conditionally
+
+# Windows (IC Imaging Control SDK)
+pywin32>=227; sys_platform == "win32"
+
+# Linux (V4L2 - optional for advanced features)
+# v4l2>=0.1; sys_platform == "linux"  # Uncomment if needed
+
+# macOS (UVC via OpenCV)
+opencv-python>=4.5.0; sys_platform == "darwin"
+
+# Common dependencies
+numpy>=1.19.0  # For image array operations
+
+# Note: IC Imaging Control SDK must be installed separately on Windows
+# Download from: https://www.theimagingsource.com/support/downloads/ic-imaging-control-sdk/
+

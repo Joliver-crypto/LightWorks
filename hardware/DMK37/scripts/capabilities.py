@@ -80,10 +80,13 @@ def detect_platform_capabilities() -> Dict[str, Any]:
 def check_ic_imaging_control() -> bool:
     """Check if IC Imaging Control is available on Windows"""
     try:
-        # Try to import IC Imaging Control
-        import ic_imaging_control
+        # Try to import win32com for COM access
+        import win32com.client
+        # Try to create IC Imaging Control COM object
+        ic = win32com.client.Dispatch("IC Imaging Control.IC Imaging Control.1")
+        # If successful, return True
         return True
-    except ImportError:
+    except (ImportError, Exception):
         return False
 
 def check_v4l2_support() -> bool:

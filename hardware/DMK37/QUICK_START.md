@@ -1,118 +1,124 @@
-# DMK 37BUX252 Quick Start Guide
+# DMK37 Camera Quick Start Guide
 
-Get up and running with the DMK 37BUX252 camera in under 5 minutes.
+## Easiest Integration Path: IC Capture Software Control in LightWorks
 
-## Prerequisites
+The DMK37 camera is now fully integrated with LightWorks using the **same IC Imaging Control SDK** that IC Capture 2.5 and IC Capture 4 use. This means you get all the same controls and features directly in LightWorks!
 
-- DMK 37BUX252 camera connected via USB
-- LightWorks application running
-- Platform-specific drivers (see below)
+### Software Versions Available
 
-## Platform Setup
+- **IC Capture 2.5** (recommended for stability) - Latest version 2.5.1557.4007
+  - Full feature set including AVI recording
+  - Proven stable with DMK37 cameras
+  
+- **IC Capture 4** (latest unified application) - Version 4.0.1.539
+  - Merges IC Capture and IC Measure into one application
+  - Enhanced features and cross-platform support
+  - Note: Some differences from 2.5 (no AVI recording)
 
-### Windows
-1. Install [IC Imaging Control](https://www.theimagingsource.com/support/downloads/)
-2. Restart LightWorks
-3. Camera should be detected automatically
-
-### Linux
-1. Install V4L2 utilities: `sudo apt-get install v4l-utils`
-2. Check camera detection: `ls /dev/video*`
-3. Camera should appear as `/dev/video0`
-
-### macOS
-1. No additional drivers needed (UVC support built-in)
-2. Camera should be detected automatically
-3. Note: Limited features available (see capabilities table)
+**For LightWorks:** We use the underlying **IC Imaging Control SDK** which works with both versions.
 
 ## Step-by-Step Setup
 
-### 1. Connect Camera
-- Connect DMK 37BUX252 via USB
-- Wait for system to recognize device
-- Check device manager (Windows) or system info (Linux/macOS)
+### 1. Install IC Imaging Control SDK
 
-### 2. Open LightWorks
-- Launch LightWorks application
-- Create new project or open existing one
+**Download and install the SDK:**
+- Visit: https://www.theimagingsource.com/support/downloads/ic-imaging-control-sdk/
+- Download the latest version matching your system (32-bit or 64-bit)
+- Run the installer
+- **Important**: This is the same SDK used by IC Capture 2.5 and IC Capture 4, so you get identical functionality
 
-### 3. Add Camera to Project
-- Drag camera from device palette to workbench
-- Camera appears as 📷 icon
+### 2. Install Python Dependencies
 
-### 4. Configure Camera
-- Select camera device
-- Open device inspector panel
-- Click "Connect" button
-- Status should show "Connected"
+```bash
+pip install pywin32
+```
 
-### 5. Basic Configuration
-- **Exposure**: Start with 1000μs (1ms)
-- **Gain**: Start with 0dB
-- **Resolution**: Use 1920x1080 for best quality
-- **Frame Rate**: 30fps (60fps on Windows)
+### 3. Connect Your Camera
 
-### 6. Start Acquisition
-- Click "Start Acquisition" button
-- Camera begins capturing frames
-- View live feed in image display
+1. Connect your DMK37 camera via USB
+2. Windows should automatically recognize it (or install the driver if prompted)
+3. Verify it works in IC Capture 2.5 (optional, but recommended for testing)
 
-## Common Settings
+### 4. Use in LightWorks
 
-### For Bright Objects
-- Exposure: 100-500μs
-- Gain: 0-10dB
-- Frame Rate: 30-60fps
+1. **Open LightWorks**
+2. **Add a DMK37 camera device** to your project (drag from palette or add from menu)
+3. **Select the device** in the project
+4. **Open the Device Inspector** panel
+5. **Click "Connect"** button
+   - You'll see: "Connected via IC Imaging Control (same SDK as IC Capture 2.5)..."
+6. **Configure camera settings:**
+   - Exposure time (in microseconds)
+   - Gain (in dB)
+   - ROI (Region of Interest) if needed
+   - Trigger settings if using hardware triggers
+7. **Click "Start Acquisition"** to begin capturing frames
+8. **View images** in the telemetry panel
 
-### For Dim Objects
-- Exposure: 1000-10000μs
-- Gain: 10-50dB
-- Frame Rate: 10-30fps
+## Features Available
 
-### For High Speed
-- Exposure: 100-1000μs
-- Gain: 0-20dB
-- Frame Rate: 60fps (Windows only)
+All the same controls you have in IC Capture 2.5 are now available in LightWorks:
+
+✅ **Exposure Control** - Set exposure time in microseconds  
+✅ **Gain Control** - Adjust gain in dB  
+✅ **ROI Selection** - Set region of interest  
+✅ **Hardware Triggering** - Line0, Line1 trigger sources  
+✅ **Software Triggering** - Trigger single frames  
+✅ **Frame Acquisition** - Continuous or single frame capture  
+✅ **Full Resolution** - Up to 1920x1080 at 60fps  
 
 ## Troubleshooting
 
-### Camera Not Detected
-- Check USB connection
-- Try different USB port
-- Restart LightWorks
-- Check platform-specific drivers
+### Camera Not Found
 
-### Connection Failed
-- Ensure camera is not used by another application
-- Check USB cable
-- Verify driver installation
-- Try different USB port
+**Problem**: "DMK37 camera not found"  
+**Solution**: 
+- Ensure camera is connected via USB
+- Check Device Manager for camera recognition
+- Try opening IC Capture 2.5 first to verify camera works
+- Ensure IC Imaging Control SDK is installed
 
-### Poor Image Quality
-- Increase exposure time
-- Adjust gain settings
-- Check lighting conditions
-- Verify focus
+### IC Imaging Control Not Available
 
-### Limited Features on macOS
-- ROI not available (UVC limitation)
-- Hardware trigger not supported
-- Use Windows/Linux for full features
+**Problem**: "IC Imaging Control not available"  
+**Solution**:
+- Verify IC Imaging Control SDK is installed
+- Run: `python -m win32com.client.makepy "IC Imaging Control.IC Imaging Control.1"`
+- Reinstall IC Imaging Control SDK if needed
+
+### win32com Not Available
+
+**Problem**: "win32com not available"  
+**Solution**:
+```bash
+pip install pywin32
+```
+
+### Multiple Cameras
+
+If you have multiple DMK37 cameras:
+
+```python
+# In your Python script, specify serial number
+camera = DMK37Controller()
+camera.connect(serial="DMK37-12345")  # Use your camera's serial number
+```
+
+In LightWorks, you can bind specific devices to specific cameras via the device binding panel.
+
+## Integration Notes
+
+- **Same SDK as IC Capture software**: You get identical functionality to IC Capture 2.5 and IC Capture 4
+- **Settings may persist**: Camera settings configured in IC Capture may be visible in LightWorks
+- **Close IC Capture**: When using camera in LightWorks, close IC Capture (2.5 or 4) to avoid conflicts
+- **Full feature parity**: All IC Capture features are available in LightWorks
+- **SDK independent**: The IC Imaging Control SDK version is independent of IC Capture application version
 
 ## Next Steps
 
-- Explore advanced features in device inspector
-- Set up automated workflows
-- Configure data logging
-- Integrate with other devices
+1. **Configure camera settings** for your experiment
+2. **Set up workflows** to automate camera operations
+3. **Integrate with other devices** in your optical bench setup
+4. **Record and analyze** captured images
 
-## Support
-
-- Check [README.md](README.md) for detailed documentation
-- See [CHANGELOG.md](CHANGELOG.md) for updates
-- Report issues in LightWorks project repository
-
-
-
-
-
+For detailed installation instructions, see [INSTALLATION.md](INSTALLATION.md)

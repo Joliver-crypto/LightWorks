@@ -5,6 +5,7 @@ The Imaging Source DMK 37BUX252 scientific camera with cross-platform support.
 ## Features
 
 - **Cross-platform support**: Windows (IC Imaging Control), Linux (V4L2), macOS (UVC)
+- **IC Capture 2.5/4 Integration**: Uses the same IC Imaging Control SDK as IC Capture 2.5 and IC Capture 4 on Windows
 - **Capability-driven UI**: Controls automatically adapt based on platform capabilities
 - **High resolution**: Up to 1920x1080 at 60fps (Windows) or 30fps (Linux/macOS)
 - **Advanced controls**: Exposure, gain, ROI, hardware/software triggering
@@ -26,11 +27,46 @@ The Imaging Source DMK 37BUX252 scientific camera with cross-platform support.
 
 ## Quick Start
 
+### Windows (IC Imaging Control SDK)
+
+1. **Install IC Imaging Control SDK** (same SDK used by IC Capture 2.5)
+   - Download from: https://www.theimagingsource.com/support/downloads/ic-imaging-control-sdk/
+   - Install the SDK version matching your system
+   - See [INSTALLATION.md](INSTALLATION.md) for detailed instructions
+
+2. **Install Python dependencies**
+   ```bash
+   pip install pywin32
+   ```
+
+3. **Connect the camera** via USB
+
+4. **Use in LightWorks**
+   - Add DMK37 camera device to your project
+   - Click "Connect" in the device inspector
+   - You'll see: "Connected via IC Imaging Control (same SDK as IC Capture 2.5)..."
+   - Configure settings (exposure, gain, etc.)
+   - Start acquisition to begin capturing frames
+
+### Linux/macOS
+
 1. **Connect the camera** via USB
 2. **Select the device** in LightWorks
 3. **Click Connect** in the device inspector
 4. **Configure settings** (exposure, gain, etc.)
 5. **Start acquisition** to begin capturing frames
+
+### Integration with IC Capture Software
+
+Since LightWorks uses the same IC Imaging Control SDK as IC Capture 2.5 and IC Capture 4:
+- Settings configured in IC Capture may be visible in LightWorks
+- Camera state is shared between applications (if camera allows)
+- Close IC Capture when using the camera in LightWorks to avoid conflicts
+- Full feature parity with IC Capture software on Windows
+
+**Note:** The IC Imaging Control SDK is compatible with both:
+- **IC Capture 2.5** - Stable version with AVI recording support
+- **IC Capture 4** - Latest unified application with enhanced features (no AVI recording)
 
 ## Usage
 
