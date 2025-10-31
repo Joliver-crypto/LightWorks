@@ -148,24 +148,74 @@ function LiveCameraView({ device }: { device?: Component }) {
       try {
         // TODO: Replace with actual API call to get camera frames
         const canvas = canvasRef.current
-        if (!canvas) return
+        if (!canvas) {
+          animationFrameRef.current = requestAnimationFrame(pollFrames)
+          return
+        }
 
         const ctx = canvas.getContext('2d')
-        if (!ctx) return
+        if (!ctx) {
+          animationFrameRef.current = requestAnimationFrame(pollFrames)
+          return
+        }
 
+        // Clear canvas and reset filter
+        ctx.save()
+        ctx.setTransform(1, 0, 0, 1, 0, 0)
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+        
         // Simulated frame - in real implementation, this would come from camera backend
-        ctx.fillStyle = '#1a1a1a'
-        ctx.fillRect(0, 0, canvas.width, canvas.height)
+        // For now, create a test pattern to show it's working
+        const time = Date.now()
+        const patternSize = 50
         
-        // Apply brightness/contrast filters
-        ctx.filter = `brightness(${settings.brightness}%) contrast(${settings.contrast}%)`
+        // Create animated test pattern to show frames are being processed
+        for (let x = 0; x < canvas.width; x += patternSize) {
+          for (let y = 0; y < canvas.height; y += patternSize) {
+            const brightness = ((Math.sin((x + time * 0.01) / 20) + 1) / 2) * 100
+            ctx.fillStyle = `rgba(${Math.floor(brightness * 2.55)}, ${Math.floor(brightness * 2.55)}, ${Math.floor(brightness * 2.55)}, 1)`
+            ctx.fillRect(x, y, patternSize, patternSize)
+          }
+        }
         
-        // Draw placeholder text
-        ctx.fillStyle = '#888'
-        ctx.font = '16px monospace'
-        ctx.textAlign = 'center'
-        ctx.fillText('Live View (IC Capture 2.5)', canvas.width / 2, canvas.height / 2 - 10)
-        ctx.fillText('Waiting for camera frames...', canvas.width / 2, canvas.height / 2 + 10)
+        // Apply brightness/contrast filters as post-processing
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+        const data = imageData.data
+        
+        const brightnessFactor = settings.brightness / 50 // 0-2 range
+        const contrastFactor = (settings.contrast - 50) / 50 * 0.5 // -0.5 to 0.5 range
+        
+        for (let i = 0; i < data.length; i += 4) {
+          // Apply brightness
+          data[i] = Math.min(255, data[i] * brightnessFactor)
+          data[i + 1] = Math.min(255, data[i + 1] * brightnessFactor)
+          data[i + 2] = Math.min(255, data[i + 2] * brightnessFactor)
+          
+          // Apply contrast
+          data[i] = Math.min(255, Math.max(0, (data[i] - 128) * (1 + contrastFactor) + 128))
+          data[i + 1] = Math.min(255, Math.max(0, (data[i + 1] - 128) * (1 + contrastFactor) + 128))
+          data[i + 2] = Math.min(255, Math.max(0, (data[i + 2] - 128) * (1 + contrastFactor) + 128))
+        }
+        
+        ctx.putImageData(imageData, 0, 0)
+        ctx.restore()
+        
+        // Draw status overlay
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'
+        ctx.fillRect(10, 10, 300, 60)
+        
+        ctx.fillStyle = '#fff'
+        ctx.font = '14px monospace'
+        ctx.textAlign = 'left'
+        ctx.fillText('Live View (IC Capture 2.5)', 20, 30)
+        
+        if (frameCountRef.current > 0 || frameRate > 0) {
+          ctx.fillStyle = '#0f0'
+          ctx.fillText(`Acquiring - ${frameRate > 0 ? frameRate : '...'} fps`, 20, 50)
+        } else {
+          ctx.fillStyle = '#ff0'
+          ctx.fillText('Initializing...', 20, 50)
+        }
 
         // Update frame rate
         frameCountRef.current++
@@ -184,6 +234,8 @@ function LiveCameraView({ device }: { device?: Component }) {
         animationFrameRef.current = requestAnimationFrame(pollFrames)
       } catch (error) {
         debugLog('error', 'Error polling frames', { error: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined })
+        // Continue polling even on error
+        animationFrameRef.current = requestAnimationFrame(pollFrames)
       }
     }
 
@@ -215,6 +267,27 @@ function LiveCameraView({ device }: { device?: Component }) {
     canvas.height = newHeight
   }, [isFullscreen])
   
+  // Auto-start acquisition when connected
+  useEffect(() => {
+    if (connectionStatus === 'connected' && !isAcquiring && !cameraInUse && !error) {
+      debugLog('info', 'Camera connected - auto-starting acquisition')
+      // Small delay to ensure state is stable
+      const timer = setTimeout(() => {
+        // Start acquisition directly
+        debugLog('debug', 'Setting acquisition state to true')
+        setIsAcquiring(true)
+        frameCountRef.current = 0
+        lastFrameTimeRef.current = Date.now()
+        setDebugInfo(prev => ({
+          ...prev,
+          acquisitionStartedAt: Date.now(),
+          acquisitionAttempts: (prev.acquisitionAttempts || 0) + 1
+        }))
+      }, 300)
+      return () => clearTimeout(timer)
+    }
+  }, [connectionStatus, isAcquiring, cameraInUse, error]) // Only trigger on connection status change
+
   // Initial debug log
   useEffect(() => {
     debugLog('info', 'LiveCameraView component initialized', { device: device?.type })
@@ -274,6 +347,8 @@ function LiveCameraView({ device }: { device?: Component }) {
           connectedAt: Date.now(),
           connectionAttempts: (prev.connectionAttempts || 0) + 1
         }))
+        
+        // Auto-start is handled by useEffect hook
       }, 500)
     } catch (err: any) {
       // Handle connection errors
