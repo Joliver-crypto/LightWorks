@@ -159,62 +159,80 @@ function LiveCameraView({ device }: { device?: Component }) {
           return
         }
 
-        // Clear canvas and reset filter
-        ctx.save()
-        ctx.setTransform(1, 0, 0, 1, 0, 0)
+        // Clear canvas
         ctx.clearRect(0, 0, canvas.width, canvas.height)
         
-        // Simulated frame - in real implementation, this would come from camera backend
-        // For now, create a test pattern to show it's working
-        const time = Date.now()
-        const patternSize = 50
+        // TODO: Replace with actual camera frame from backend
+        // For now, create a clean, static placeholder like IC Capture 2.5
+        // IC Capture shows a smooth dark gray screen when waiting for frames
         
-        // Create animated test pattern to show frames are being processed
-        for (let x = 0; x < canvas.width; x += patternSize) {
-          for (let y = 0; y < canvas.height; y += patternSize) {
-            const brightness = ((Math.sin((x + time * 0.01) / 20) + 1) / 2) * 100
-            ctx.fillStyle = `rgba(${Math.floor(brightness * 2.55)}, ${Math.floor(brightness * 2.55)}, ${Math.floor(brightness * 2.55)}, 1)`
-            ctx.fillRect(x, y, patternSize, patternSize)
-          }
-        }
+        // Calculate base color based on brightness setting (default to dark gray)
+        const baseGray = Math.floor((settings.brightness / 100) * 50 + 25) // 25-75 range
+        const grayColor = `rgb(${baseGray}, ${baseGray}, ${baseGray})`
         
-        // Apply brightness/contrast filters as post-processing
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-        const data = imageData.data
+        // Fill with solid color (like IC Capture 2.5 - clean and professional)
+        ctx.fillStyle = grayColor
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
         
-        const brightnessFactor = settings.brightness / 50 // 0-2 range
-        const contrastFactor = (settings.contrast - 50) / 50 * 0.5 // -0.5 to 0.5 range
-        
-        for (let i = 0; i < data.length; i += 4) {
-          // Apply brightness
-          data[i] = Math.min(255, data[i] * brightnessFactor)
-          data[i + 1] = Math.min(255, data[i + 1] * brightnessFactor)
-          data[i + 2] = Math.min(255, data[i + 2] * brightnessFactor)
+        // Apply brightness/contrast adjustments if settings are not at default
+        if (settings.brightness !== 50 || settings.contrast !== 50) {
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+          const data = imageData.data
           
-          // Apply contrast
-          data[i] = Math.min(255, Math.max(0, (data[i] - 128) * (1 + contrastFactor) + 128))
-          data[i + 1] = Math.min(255, Math.max(0, (data[i + 1] - 128) * (1 + contrastFactor) + 128))
-          data[i + 2] = Math.min(255, Math.max(0, (data[i + 2] - 128) * (1 + contrastFactor) + 128))
+          const contrastFactor = (settings.contrast - 50) / 50 // -1 to 1 range
+          const brightnessAdjustment = (settings.brightness - 50) / 50 * 50 // -50 to 50 range
+          
+          for (let i = 0; i < data.length; i += 4) {
+            // Apply contrast (center around 128)
+            let r = data[i]
+            let g = data[i + 1]
+            let b = data[i + 2]
+            
+            // Contrast
+            r = Math.min(255, Math.max(0, ((r - 128) * (1 + contrastFactor)) + 128))
+            g = Math.min(255, Math.max(0, ((g - 128) * (1 + contrastFactor)) + 128))
+            b = Math.min(255, Math.max(0, ((b - 128) * (1 + contrastFactor)) + 128))
+            
+            // Brightness
+            r = Math.min(255, Math.max(0, r + brightnessAdjustment))
+            g = Math.min(255, Math.max(0, g + brightnessAdjustment))
+            b = Math.min(255, Math.max(0, b + brightnessAdjustment))
+            
+            data[i] = r
+            data[i + 1] = g
+            data[i + 2] = b
+          }
+          
+          ctx.putImageData(imageData, 0, 0)
         }
         
-        ctx.putImageData(imageData, 0, 0)
-        ctx.restore()
-        
-        // Draw status overlay
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'
-        ctx.fillRect(10, 10, 300, 60)
-        
-        ctx.fillStyle = '#fff'
-        ctx.font = '14px monospace'
-        ctx.textAlign = 'left'
-        ctx.fillText('Live View (IC Capture 2.5)', 20, 30)
-        
-        if (frameCountRef.current > 0 || frameRate > 0) {
+        // Draw minimal status overlay (only when needed)
+        if (frameRate === 0 || frameCountRef.current < 10) {
+          // Show status during initialization
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'
+          ctx.fillRect(10, 10, 280, 50)
+          
+          ctx.fillStyle = '#fff'
+          ctx.font = '13px monospace'
+          ctx.textAlign = 'left'
+          ctx.fillText('Live View (IC Capture 2.5)', 20, 30)
+          
+          if (frameRate === 0) {
+            ctx.fillStyle = '#ffa500'
+            ctx.fillText('Waiting for camera frames...', 20, 48)
+          } else {
+            ctx.fillStyle = '#0f0'
+            ctx.fillText(`Acquiring - ${frameRate} fps`, 20, 48)
+          }
+        } else if (frameRate > 0) {
+          // Show compact fps indicator in corner (like IC Capture 2.5)
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.6)'
+          ctx.fillRect(canvas.width - 85, 10, 75, 22)
+          
           ctx.fillStyle = '#0f0'
-          ctx.fillText(`Acquiring - ${frameRate > 0 ? frameRate : '...'} fps`, 20, 50)
-        } else {
-          ctx.fillStyle = '#ff0'
-          ctx.fillText('Initializing...', 20, 50)
+          ctx.font = '11px monospace'
+          ctx.textAlign = 'right'
+          ctx.fillText(`${frameRate} fps`, canvas.width - 12, 25)
         }
 
         // Update frame rate
